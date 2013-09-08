@@ -1,0 +1,23 @@
+<html>
+<head>
+  <title>Pikafe</title>
+  <style>
+    label, #showImages {cursor:pointer}
+    label:hover, input:hover + label, #showImages:hover {color:#88e;}
+  </style>
+</head>
+<body>
+  <div style='width:150px;color:blue;'>
+    <div class='item'>
+      <input type='checkbox' id='excChk'> <label for='excChk' >Exclude Domain</label>
+    </div>
+    <div class='item' style='margin-left:24px;'>
+      <span id='showImages'>Show Images</span>
+    </div>
+    <div class='item'>
+      <input type='checkbox' id='pauseChk'> <label for='pauseChk' >Pause</label>
+    </div>
+  </div>
+  <script src='popup.js' type='text/javascript'></script>
+</body>
+</html>
