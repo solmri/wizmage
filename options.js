@@ -14,7 +14,7 @@ $(function() {
 		addName.val('');
 		return false;
 	});
-	$('.delete').live('click',function() {
+	$('#list').on('click','.delete',function() {
 		$(this).parent().remove();
 		Save();
 	});
