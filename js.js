@@ -17,7 +17,7 @@ var pollID = setInterval(function () {
         if (!contentLoaded) AddHeadStyle('body', '{opacity: 0 !important;}');
         AddHeadStyle('img', '{opacity: 0 !important;}');
         chrome.extension.sendMessage({ r: 'isNoPattern' }, function (isNoPattern) {
-            AddHeadStyle('.patternBgImg', '{background-image: ' + (isNoPattern ? '"none"' : pattern) + ' !important; background-repeat: repeat !important;text-indent:0 !important;}');
+            AddHeadStyle('.patternBgImg', '{background-image: ' + (isNoPattern ? 'none' : pattern) + ' !important; background-repeat: repeat !important;text-indent:0 !important;}');
         });
         AddHeadStyle('.showThisImg', '{opacity:1 !important}');
         clearInterval(pollID);
