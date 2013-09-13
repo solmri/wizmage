@@ -1,29 +1,35 @@
-$(function() {
-	var addName=$('#addName').focus();
-	chrome.extension.sendMessage({r:'getUrlList'},function (urlList) {
-		for (var i=0;i<urlList.length;i++) {
-			AddItem(urlList[i]);
-		}
-	});
-	$('form').submit(function() {
-		n=$.trim(addName.val()).toLowerCase();
-		if (n.length>0) {
-			AddItem(n);
-			Save();
-		}
-		addName.val('');
-		return false;
-	});
-	$('#list').on('click','.delete',function() {
-		$(this).parent().remove();
-		Save();
-	});
-	function Save() {
-		var urlList=[];
-		$('.url').each(function() {urlList.push($(this).html()); });
-		chrome.extension.sendMessage({r:'setUrlList',urlList:urlList});
-	};
-	function AddItem(s) {
-		$('#list').append("<div class='item'><span class='delete'>X</span> <span class='url'>" + s + '</span></div>');
-	}
+$(function () {
+    var $addName = $('#addName').focus(), $noPattern = $('#noPattern'), $list = $('#list');
+    chrome.extension.sendMessage({ r: 'getUrlList' }, function (urlList) {
+        for (var i = 0; i < urlList.length; i++) {
+            AddItem(urlList[i]);
+        }
+    });
+    chrome.extension.sendMessage({ r: 'isNoPattern' }, function (isNoPattern) {
+        $noPattern[0].checked = isNoPattern;
+    });
+    $noPattern.click(function () {
+        chrome.extension.sendMessage({ r: 'setNoPattern', isNoPattern: $noPattern[0].checked });
+    });
+    $('form').submit(function () {
+        var url = $.trim($addName.val()).toLowerCase();
+        if (url.length > 0) {
+            AddItem(url);
+            Save();
+        }
+        $addName.val('');
+        return false;
+    });
+    $list.on('click', '.delete', function () {
+        $(this).parent().remove();
+        Save();
+    });
+    function Save() {
+        var urlList = [];
+        $('.url').each(function () { urlList.push($(this).text()); });
+        chrome.extension.sendMessage({ r: 'setUrlList', urlList: urlList });
+    };
+    function AddItem(url) {
+        $list.append("<div class='item'><span class='delete'>X</span> <span class='url'>" + url + '</span></div>');
+    }
 });
