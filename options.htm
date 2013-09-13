@@ -1,24 +1,33 @@
+<!DOCTYPE html>
 <html>
 <head>
-  <title>Wizmage Options</title>
-  <script src='jquery.min.js'></script>
-  <script src='options.js'></script>
-  <style>
-    body {background: #004;}
-    #list{border-radius: 10px;width: 500px;border: 2px solid #AA1212;padding: 10px;margin: 20px 0px;}
-    .delete {cursor: pointer;color: red;border: 2px solid #BD17F1;padding: 0px 4px;border-radius: 12px;}
-    #cont {width: 525px;background: #B1F0B1;margin: auto;margin-top: 50px;padding: 20px;border-radius: 20px;}
-    .item:first-child {margin-top: 0;}
-    .item {margin-top: 10px;}
-    #addName {width: 400px;border: 1px solid green;border-radius: 5px;padding: 0px 5px;}
-  </style>
+    <title>Wizmage Options</title>
+    <script src='jquery.min.js'></script>
+    <script src='options.js'></script>
+    <style>
+        body { background: #004; font-family: arial; }
+        #cont { width: 525px; background: #B1F0B1; margin: auto; margin-top: 50px; padding: 20px; border-radius: 20px; }
+        #list { border-radius: 10px; width: 500px; border: 2px solid #AA1212; padding: 10px; margin: 10px 0px; }
+        h3 { margin-bottom: 10px; }
+        .delete { cursor: pointer; color: red; border: 2px solid #BD17F1; padding: 0px 4px; border-radius: 12px; }
+        .item:first-child { margin-top: 0; }
+        .item { margin-top: 10px; }
+        #addName { width: 400px; border: 1px solid green; border-radius: 5px; padding: 0px 5px; }
+    </style>
 </head>
 <body>
-  <div id='cont'>
-	<form>
-		<input type='text' id='addName' >
-		<input type='submit' value='Add' id='addBut'>
-	</form>
-    <div id='list'></div>
-  </div>
-<body>
+    <div id='cont'>
+        <div>
+            <input type="checkbox" id="noPattern" />
+            <label for="noPattern">Don't show pattern for hidden images</label>
+        </div>
+        <h3>Exceptions</h3>
+        <form>
+            <input type='text' id='addName'>
+            <input type='submit' value='Add Exception' id='addBut'>
+        </form>
+        <div><i>a URL containing any of the following lines will be excepted</i></div>
+        <div id='list'></div>
+    </div>
+</body>
+</html>
