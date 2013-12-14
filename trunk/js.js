@@ -16,7 +16,7 @@ var pollID = setInterval(function () {
     else if (document.head) {
         if (!contentLoaded) AddHeadStyle('body', '{opacity: 0 !important;}');
         AddHeadStyle('img', '{opacity: 0 !important;}');
-        chrome.extension.sendMessage({ r: 'isNoPattern' }, function (isNoPattern) {
+        chrome.runtime.sendMessage({ r: 'isNoPattern' }, function (isNoPattern) {
             AddHeadStyle('.patternBgImg', '{background-image: ' + (isNoPattern ? 'none' : pattern) + ' !important; background-repeat: repeat !important;text-indent:0 !important;}');
         });
         AddHeadStyle('.showThisImg', '{opacity:1 !important}');
@@ -24,11 +24,11 @@ var pollID = setInterval(function () {
     }
 }, 1);
 //check if paused or excepted - if yes, show all, if no, hide body. 
-chrome.extension.sendMessage({ r: 'isExceptionOrPaused', url: window.location.href }, function (response) {
+chrome.runtime.sendMessage({ r: 'isExceptionOrPaused', url: window.location.href }, function (response) {
     if (response) ShowImages();
 });
 //catch 'Show Images' option from browser actions
-chrome.extension.onMessage.addListener(
+chrome.runtime.onMessage.addListener(
 	function (request, sender, sendResponse) {
 	    if (request.r == 'showImages') ShowImages();
 	});

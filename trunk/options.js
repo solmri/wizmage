@@ -1,15 +1,15 @@
 $(function () {
     var $addName = $('#addName').focus(), $noPattern = $('#noPattern'), $list = $('#list');
-    chrome.extension.sendMessage({ r: 'getUrlList' }, function (urlList) {
+    chrome.runtime.sendMessage({ r: 'getUrlList' }, function (urlList) {
         for (var i = 0; i < urlList.length; i++) {
             AddItem(urlList[i]);
         }
     });
-    chrome.extension.sendMessage({ r: 'isNoPattern' }, function (isNoPattern) {
+    chrome.runtime.sendMessage({ r: 'isNoPattern' }, function (isNoPattern) {
         $noPattern[0].checked = isNoPattern;
     });
     $noPattern.click(function () {
-        chrome.extension.sendMessage({ r: 'setNoPattern', isNoPattern: $noPattern[0].checked });
+        chrome.runtime.sendMessage({ r: 'setNoPattern', isNoPattern: $noPattern[0].checked });
     });
     $('form').submit(function () {
         var url = $.trim($addName.val()).toLowerCase();
@@ -27,7 +27,7 @@ $(function () {
     function Save() {
         var urlList = [];
         $('.url').each(function () { urlList.push($(this).text()); });
-        chrome.extension.sendMessage({ r: 'setUrlList', urlList: urlList });
+        chrome.runtime.sendMessage({ r: 'setUrlList', urlList: urlList });
     };
     function AddItem(url) {
         $list.append("<div class='item'><span class='delete'>X</span> <span class='url'>" + url + '</span></div>');
