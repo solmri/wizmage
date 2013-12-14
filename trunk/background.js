@@ -1,4 +1,4 @@
-var ul = localStorage.urlList, urlList = ul ? JSON.parse(ul) : [],
+var ul = localStorage.urlList, urlList = ul ? JSON.parse(ul) : [], excDomains = [],
     paused = localStorage.isPaused == 1, isNoPattern = localStorage.isNoPattern == 1,
     pausedTabs = [];
 chrome.runtime.onMessage.addListener(
@@ -8,10 +8,19 @@ chrome.runtime.onMessage.addListener(
 	        if (sender.tab) {
 	            if (paused || pausedTabs.indexOf(sender.tab.id) != -1)
 	                r = true;
-	            else
-	                for (var i = 0; i < urlList.length; i++) {
-	                    if (request.url.toLowerCase().indexOf(urlList[i]) != -1) { r = true; break; }
+	            else {
+	                var relevantExcDomains=[];
+	                for (var i = 0; i < excDomains.length; i++) {
+	                    if (excDomains[i].tabId == sender.tab.id)
+	                        relevantExcDomains.push(excDomains[i].domain);
 	                }
+	                if (relevantExcDomains.length && relevantExcDomains.indexOf(request.url.match(/^[\w-]+:\/*\[?([\w\.:-]+)\]?(?::\d+)?/)[1])!=-1)
+	                    r=true;
+                    else
+	                    for (var i = 0; i < urlList.length; i++) {
+	                        if (request.url.toLowerCase().indexOf(urlList[i]) != -1) { r = true; break; }
+	                    }
+	            }
 	            if (!r)
 	                chrome.browserAction.setIcon({ path: 'icon.png', tabId: sender.tab.id });
 	        }
@@ -21,7 +30,17 @@ chrome.runtime.onMessage.addListener(
 	        localStorage.urlList = JSON.stringify(urlList);
 	    } else if (request.r == 'getUrlList')
 	        sendResponse(urlList);
-	    else if (request.r == 'pause') {
+	    else if (request.r == 'excTab') {
+	        if (request.exclude)
+	            excDomains.push({ tabId: request.tabId, domain: request.domain });
+	        else
+	            excDomains = excDomains.filter(function (v) { return v.tabId != request.tabId || v.domain != request.domain; });
+	    } else if (request.r == 'isExcTab') {
+	        for (var i = 0; i < excDomains.length; i++)
+	            if (excDomains[i].tabId == request.tabId && excDomains[i].domain == request.domain)
+	                sendResponse(true);
+	        sendResponse(false);
+	    } else if (request.r == 'pause') {
 	        paused = request.pause;
 	        localStorage.isPaused = paused ? 1 : 0;
 	    } else if (request.r == 'isPaused')

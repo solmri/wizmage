@@ -1,5 +1,14 @@
 chrome.tabs.query({ active: true, currentWindow: true }, function (tabs) {
-    var urlList, activeTab = tabs[0];
+    var urlList, activeTab = tabs[0], showImagesEl = document.getElementById('showImages');
+    function disableShowImagesEl() {
+        showImagesEl.checked = true;
+        showImagesEl.disabled = true;
+        showImagesEl.parentElement.className += ' disabled';
+    }
+    function showImages() {
+        chrome.tabs.sendMessage(activeTab.id, { r: 'showImages' });
+        disableShowImagesEl();
+    }
     chrome.runtime.sendMessage({ r: 'getUrlList' }, function (r) {
         urlList = r;
         for (var i = 0; i < urlList.length; i++) {
@@ -9,19 +18,26 @@ chrome.tabs.query({ active: true, currentWindow: true }, function (tabs) {
             }
         }
     });
-    chrome.runtime.sendMessage({ r: 'isTabPaused', tab: activeTab }, function (r) {
-        document.getElementById('pauseTab').checked = r;
+    chrome.runtime.sendMessage({r: 'isExcTab', tabId: activeTab.id, domain: activeTab.url.match(/^[\w-]+:\/*\[?([\w\.:-]+)\]?(?::\d+)?/)[1]}, function (isExcluded) {
+        if (isExcluded) document.getElementById('excTab').checked = true;
+    });
+    chrome.tabs.sendMessage(activeTab.id, { r: 'isShowImages' }, function (isShowImages) {
+        if (isShowImages)
+            disableShowImagesEl();
     });
     chrome.runtime.sendMessage({ r: 'isPaused' }, function (isPaused) {
         if (isPaused) document.getElementById('pauseChk').checked = true;
     });
+    chrome.runtime.sendMessage({ r: 'isTabPaused', tab: activeTab }, function (r) {
+        document.getElementById('pauseTab').checked = r;
+    });
     document.getElementById('showImages').onclick = function () {
-        chrome.tabs.sendMessage(activeTab.id, { r: 'showImages' });
+        showImages();
     };
     document.getElementById('excChk').onclick = function () {
         if (document.getElementById('excChk').checked) {
             urlList.push(activeTab.url.match(/^[\w-]+:\/*\[?([\w\.:-]+)\]?(?::\d+)?/)[1].toLowerCase());
-            chrome.tabs.sendMessage(activeTab.id, { r: 'showImages' });
+            showImages();
             chrome.browserAction.setIcon({ path: 'icon-d.png', tabId: activeTab.id });
         } else {
             for (var i = 0; i < urlList.length; i++) {
@@ -31,10 +47,23 @@ chrome.tabs.query({ active: true, currentWindow: true }, function (tabs) {
         }
         chrome.runtime.sendMessage({ r: 'setUrlList', urlList: urlList });
     };
+    document.getElementById('excTab').onclick = function () {
+        var isChecked = document.getElementById('excTab').checked;
+        chrome.runtime.sendMessage({
+            r: 'excTab',
+            exclude: isChecked,
+            tabId: activeTab.id,
+            domain: activeTab.url.match(/^[\w-]+:\/*\[?([\w\.:-]+)\]?(?::\d+)?/)[1]
+        });
+        if (isChecked)
+            showImages();
+    };
     document.getElementById('pauseChk').onclick = function () {
         chrome.runtime.sendMessage({ r: 'pause', pause: this.checked });
+        showImages();
     };
     document.getElementById('pauseTab').onclick = function () {
         chrome.runtime.sendMessage({ r: 'pauseTab', tab: activeTab, pause: this.checked });
+        showImages();
     };
 });

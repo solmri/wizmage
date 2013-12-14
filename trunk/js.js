@@ -31,6 +31,7 @@ chrome.runtime.sendMessage({ r: 'isExceptionOrPaused', url: window.location.href
 chrome.runtime.onMessage.addListener(
 	function (request, sender, sendResponse) {
 	    if (request.r == 'showImages') ShowImages();
+	    else if (request.r == 'isShowImages') sendResponse(showAll);
 	});
 //ALT-a, ALT-z
 document.addEventListener('keydown', DocKeyDown);
