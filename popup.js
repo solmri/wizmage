@@ -7,6 +7,7 @@ chrome.tabs.query({ active: true, currentWindow: true }, function (tabs) {
     }
     function showImages() {
         chrome.tabs.sendMessage(activeTab.id, { r: 'showImages' });
+        chrome.browserAction.setIcon({ path: 'icon-d.png', tabId: activeTab.id });
         disableShowImagesEl();
     }
     chrome.runtime.sendMessage({ r: 'getUrlList' }, function (r) {
@@ -38,7 +39,6 @@ chrome.tabs.query({ active: true, currentWindow: true }, function (tabs) {
         if (document.getElementById('excChk').checked) {
             urlList.push(activeTab.url.match(/^[\w-]+:\/*\[?([\w\.:-]+)\]?(?::\d+)?/)[1].toLowerCase());
             showImages();
-            chrome.browserAction.setIcon({ path: 'icon-d.png', tabId: activeTab.id });
         } else {
             for (var i = 0; i < urlList.length; i++) {
                 if (activeTab.url.toLowerCase().indexOf(urlList[i]) != -1)
