@@ -37,7 +37,7 @@ chrome.runtime.onMessage.addListener(
 document.addEventListener('keydown', DocKeyDown);
 //FUNCTIONS
 function DocKeyDown(e) {
-	if (mouseOverEl != null && e.altKey) {
+	if (mouseOverEl && e.altKey) {
 		if (e.keyCode == 65 && !mouseOverEl.elShown) {
 			ShowEl.call(mouseOverEl);
 		} else if (e.keyCode == 90 && mouseOverEl.elShown) {
@@ -140,7 +140,8 @@ function ShowEl() {
 	if (this.elShown) return;
 	this.elShown = true;
 	if (this.tagName == 'IMG') {
-		this.removeEventListener('load', ImgOnLoad);
+	    this.removeEventListener('load', ImgOnLoad);
+	    this.hasLoadEventListener = false;
 		this.src = this.oldsrc;
 	}
 	RemoveClass(this, 'patternBgImg');
