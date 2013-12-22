@@ -3,22 +3,28 @@
     <title>Wizmage</title>
     <style>
         body { font-family: Arial; font-size: 14px; }
-        label { cursor: pointer; display: inline-block; }
-            label:hover, input:hover + label { color: #88e; }
+        label, #options { cursor: pointer; display: inline-block; }
+            label:hover, input:hover + label, #options:hover { color: #88e; }
         .item { margin-bottom: 10px; }
             .item.disabled label { color: grey; }
         input, label { vertical-align: middle; }
+        #options { text-decoration: underline; }
     </style>
 </head>
 <body>
     <div style='width: 150px; color: blue;'>
+        <div class='item'>
+            <a id='options' href="options.htm" target="_blank">Options</a>
+        </div>
         <div class='item'>
             <input type='checkbox' id='excChk'>
             <label for='excChk'>Exclude Domain</label>
         </div>
         <div class='item'>
             <input type='checkbox' id='excTab'>
-            <label for='excTab'>Exclude Domain<br />for this Tab</label>
+            <label for='excTab'>
+                Exclude Domain<br />
+                for this Tab</label>
         </div>
         <div class='item'>
             <input type='checkbox' id='showImages'>
@@ -30,7 +36,9 @@
         </div>
         <div class='item'>
             <input type='checkbox' id='pauseTab'>
-            <label for='pauseTab'>Pause<br />for this Tab</label>
+            <label for='pauseTab'>
+                Pause<br />
+                for this Tab</label>
         </div>
     </div>
     <script src='popup.js' type='text/javascript'></script>
