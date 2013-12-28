@@ -4,6 +4,7 @@ chrome.tabs.query({ active: true, currentWindow: true }, function (tabs) {
         showImagesEl.checked = true;
         showImagesEl.disabled = true;
         showImagesEl.parentElement.className += ' disabled';
+        showImagesEl.parentElement.title = 'To hide the images, ensure that Wizmage is not paused, and that the page is not excluded, and then reload the page.';
     }
     function showImages() {
         chrome.tabs.sendMessage(activeTab.id, { r: 'showImages' });
@@ -19,7 +20,7 @@ chrome.tabs.query({ active: true, currentWindow: true }, function (tabs) {
             }
         }
     });
-    chrome.runtime.sendMessage({r: 'isExcTab', tabId: activeTab.id, domain: activeTab.url.match(/^[\w-]+:\/*\[?([\w\.:-]+)\]?(?::\d+)?/)[1]}, function (isExcluded) {
+    chrome.runtime.sendMessage({ r: 'isExcTab', tabId: activeTab.id, domain: activeTab.url.match(/^[\w-]+:\/*\[?([\w\.:-]+)\]?(?::\d+)?/)[1] }, function (isExcluded) {
         if (isExcluded) document.getElementById('excTab').checked = true;
     });
     chrome.tabs.sendMessage(activeTab.id, { r: 'isShowImages' }, function (isShowImages) {
@@ -67,3 +68,4 @@ chrome.tabs.query({ active: true, currentWindow: true }, function (tabs) {
         showImages();
     };
 });
+document.getElementById('close').onclick = function () { close(); };
