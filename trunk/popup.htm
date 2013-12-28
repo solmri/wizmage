@@ -9,12 +9,15 @@
             .item.disabled label { color: grey; }
         input, label { vertical-align: middle; }
         #options { text-decoration: underline; }
+        #close { float: right; border: 1px solid; font-weight: bold; font-size: 10px; color: black; cursor: pointer; }
+            #close:hover { color: #555; }
     </style>
 </head>
 <body>
     <div style='width: 150px; color: blue;'>
         <div class='item'>
             <a id='options' href="options.htm" target="_blank">Options</a>
+            <div id="close">&#x2715;</div>
         </div>
         <div class='item'>
             <input type='checkbox' id='excChk'>
