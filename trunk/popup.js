@@ -67,5 +67,16 @@ chrome.tabs.query({ active: true, currentWindow: true }, function (tabs) {
         chrome.runtime.sendMessage({ r: 'pauseTab', tab: activeTab, pause: this.checked });
         showImages();
     };
+    document.getElementById('still-seeing-images').onclick = function () {
+        var advice = document.getElementById('advice');
+        advice.style.display = advice.style.display == 'block' ? 'none' : 'block';
+    };
+    document.getElementById('block-flash').onclick = function () {
+        alert("In order to avoid automatically showing Flash animations, in the 'Plug-ins' section of Chrome's settings (which you will see when you press OK), click either 'Click to play' or 'Block all'.\n'Click to play' is recommended, in case you encounter a Flash animation that is important for you to see.");
+        chrome.tabs.create({ url: "chrome://settings/content#handlers-section" });
+    };
+    document.getElementById('report').onclick = function () {
+        chrome.tabs.create({ url: "https://chrome.google.com/webstore/support/ifoggbfaoakkojipahnplnbfnhhhnmlp?hl=en&gl=IL#bug" });
+    };
 });
 document.getElementById('close').onclick = function () { close(); };
