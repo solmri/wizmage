@@ -5,6 +5,7 @@ var contentLoaded = false,
     mouseOverEl = null,
     blankImg = 'data:image/gif;base64,R0lGODlhAQABAIAAAP///////yH5BAEKAAEALAAAAAABAAEAAAICTAEAOw==',
     pattern = 'url(' + chrome.extension.getURL("pattern.png") + ')',
+    patternLight = 'url(' + chrome.extension.getURL("pattern-light.png") + ')',
     tagList = ['DIV', 'SPAN', 'A', 'LI', 'TD', 'H1', 'H2', 'H3', 'H4', 'H5', 'H6', 'I', 'STRONG', 'B', 'BIG', 'BUTTON', 'CENTER', 'SECTION', 'TABLE'],
     observer = null;
 //main event listeners - must initialise immediately to catch all events
@@ -16,6 +17,7 @@ var pollID = setInterval(function () {
         AddHeadStyle('img', '{opacity: 0 !important;}');
         chrome.runtime.sendMessage({ r: 'isNoPattern' }, function (isNoPattern) {
             AddHeadStyle('.patternBgImg', '{background-image: ' + (isNoPattern ? 'none' : pattern) + ' !important; background-repeat: repeat !important;text-indent:0 !important;}');
+            AddHeadStyle('.patternBgImg.patternBgImgLight', '{background-image: ' + (isNoPattern ? 'none' : patternLight) + ' !important;}');
         });
         AddHeadStyle('.showThisImg', '{opacity:1 !important}');
         clearInterval(pollID);
@@ -47,8 +49,19 @@ function DocKeyDown(e) {
     }
 }
 //keep track of which image-element mouse if over
-function mouseEntered(e) { mouseOverEl = this; e.stopPropagation(); }
-function mouseLeft() { if (mouseOverEl == this) mouseOverEl = null; }
+function mouseEntered(e) {
+    mouseOverEl = this;
+    if (/\bpatternBgImg\b/.test(this.className))
+        this.className += ' patternBgImgLight';
+    e.stopPropagation();
+}
+function mouseLeft() {
+    if (mouseOverEl == this) {
+        mouseOverEl = null;
+        if (/\bpatternBgImg\b/.test(this.className))
+            RemoveClass(this, 'patternBgImgLight');
+    }
+}
 //process all elements with background-image, and observe mutations for new ones
 function DoElements() {
     var all = document.querySelectorAll(tagList.join());
@@ -183,7 +196,7 @@ function RemoveHeadStyle(n) {
     delete headStyles[n];
 }
 function RemoveClass(el, n) {
-    el.className = el.className.replace(n, '');
+    el.className = el.className.replace(new RegExp('\\b' + n + '\\b'), '');
 }
 function ContentLoaded() {
     contentLoaded = true;
