@@ -5,7 +5,8 @@ var contentLoaded = false,
     mouseOverEl = null,
     blankImg = 'data:image/gif;base64,R0lGODlhAQABAIAAAP///////yH5BAEKAAEALAAAAAABAAEAAAICTAEAOw==',
     pattern = 'url(' + chrome.extension.getURL("pattern.png") + ')',
-    patternLight = 'url(' + chrome.extension.getURL("pattern-light.png") + ')',
+    patternLightUrl = chrome.extension.getURL("pattern-light.png"),
+    patternLight = 'url(' + patternLightUrl + ')',
     tagList = ['DIV', 'SPAN', 'A', 'LI', 'TD', 'H1', 'H2', 'H3', 'H4', 'H5', 'H6', 'I', 'STRONG', 'B', 'BIG', 'BUTTON', 'CENTER', 'SECTION', 'TABLE'],
     observer = null;
 //main event listeners - must initialise immediately to catch all events
@@ -41,8 +42,10 @@ function DocKeyDown(e) {
         if (e.keyCode == 65 && !mouseOverEl.elShown) {
             ShowEl.call(mouseOverEl);
         } else if (e.keyCode == 90 && mouseOverEl.elShown) {
-            if (mouseOverEl.tagName == 'IMG')
+            if (mouseOverEl.tagName == 'IMG') {
+                mouseOverEl.elShown = false;
                 DoImage.call(mouseOverEl);
+            }
             else
                 DoElement.call(mouseOverEl);
         }
@@ -51,15 +54,13 @@ function DocKeyDown(e) {
 //keep track of which image-element mouse if over
 function mouseEntered(e) {
     mouseOverEl = this;
-    if (/\bpatternBgImg\b/.test(this.className))
-        this.className += ' patternBgImgLight';
+    this.className += ' patternBgImgLight';
     e.stopPropagation();
 }
 function mouseLeft() {
     if (mouseOverEl == this) {
         mouseOverEl = null;
-        if (/\bpatternBgImg\b/.test(this.className))
-            RemoveClass(this, 'patternBgImgLight');
+        RemoveClass(this, 'patternBgImgLight');
     }
 }
 //process all elements with background-image, and observe mutations for new ones
@@ -85,16 +86,21 @@ function DoElements() {
         }
     });
     observer.observe(document, { subtree: true, childList: true });
+    //create temporary div, to eager load background img light to avoid flicker
+    var div = document.createElement('div');
+    div.style.opacity = div.style.width = div.style.height = 0;
+    div.className = 'patternBgImg patternBgImgLight';
+    document.body.appendChild(div);
 }
 function DoElement() {
     var bgimg = getComputedStyle(this).getPropertyValue('background-image');
     if (bgimg != 'none' && this.clientWidth >= 32 && this.clientHeight >= 32 && bgimg.slice(0, 3) == 'url') {
         this.className += ' patternBgImg';
         this.style.webkitFilter = 'hue-rotate(' + (Math.random() * 360) + 'deg)';
-        if (!this.hasBeenDealtWith) {
-            this.hasBeenDealtWith = true;
+        if (!this.hasMouseEventListeners) {
             this.addEventListener('mouseover', mouseEntered);
             this.addEventListener('mouseout', mouseLeft);
+            this.hasMouseEventListeners = true;
         }
         var i = new Image();
         i.owner = this;
@@ -131,8 +137,12 @@ function DoImage() {
     if (elWidth < 32 || elHeight < 32)
         this.className += ' showThisImg';
     else {
-        if (!this.hasBeenDealtWith) {
-            this.hasBeenDealtWith = true;
+        if (!this.hasMouseEventListeners) {
+            this.addEventListener('mouseover', mouseEntered);
+            this.addEventListener('mouseout', mouseLeft);
+            this.hasMouseEventListeners = true;
+        }
+        if (!this.hasTitleAndSizeSetup) {
             this.style.width = elWidth + 'px'; this.style.height = elHeight + 'px';
             if (!this.title)
                 if (this.alt)
@@ -141,13 +151,11 @@ function DoImage() {
                     this.src.match(/([-\w]+)(\.[\w]+)?$/i);
                     this.title = RegExp.$1;
                 }
-            this.addEventListener('mouseover', mouseEntered);
-            this.addEventListener('mouseout', mouseLeft);
+            this.hasTitleAndSizeSetup = true;
         }
-        if (this.className.indexOf('patternBgImg') == -1) this.className += ' patternBgImg';
+        if (!HasClass(this, 'patternBgImg')) this.className += ' patternBgImg';
         this.oldsrc = this.src;
         this.src = blankImg;
-        this.elShown = false;
     }
 }
 
@@ -164,6 +172,7 @@ function ShowEl() {
     if (showAll) {
         this.removeEventListener('mouseover', mouseEntered);
         this.removeEventListener('mouseout', mouseLeft);
+        this.hasMouseEventListeners = false;
     }
 }
 function ShowImages() {
@@ -195,8 +204,11 @@ function RemoveHeadStyle(n) {
     document.head.removeChild(headStyles[n]);
     delete headStyles[n];
 }
-function RemoveClass(el, n) {
+function RemoveClass(el, n) { //these assume long unique class names, so no need to check for word boundaries
     el.className = el.className.replace(new RegExp('\\b' + n + '\\b'), '');
+}
+function HasClass(el, n) {
+    new RegExp('\\b' + n + '\\b').test(el.className);
 }
 function ContentLoaded() {
     contentLoaded = true;
