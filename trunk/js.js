@@ -15,8 +15,7 @@ var contentLoaded = false,
     elList = [],
     mouseMoved = false,
     mouseEvent = null,
-    noEye,
-    refreshCoordsInt = 1000;
+    noEye;
 //main event listeners - must initialise immediately to catch all events
 window.addEventListener('DOMContentLoaded', DoElements);
 var pollID = setInterval(function () {
@@ -96,18 +95,19 @@ function DoElements() {
     eye.style.zIndex = 1e8;
     eye.style.cursor = 'pointer';
     document.body.appendChild(eye);
-    //create temporary div, to eager load background img light to avoid flicker
-    var div = document.createElement('div');
-    div.style.opacity = div.style.width = div.style.height = 0;
-    div.className = 'wzmPatternBgImg wzmPatternBgImgLight';
-    document.body.appendChild(div);
+    //create temporary div, to eager load background img light for noEye to avoid flicker
+    if (noEye) {
+        var div = document.createElement('div');
+        div.style.opacity = div.style.width = div.style.height = 0;
+        div.className = 'wzmPatternBgImg wzmPatternBgImgLight';
+        document.body.appendChild(div);
+    }
     //show body
     ContentLoaded();
-    //ensure coordinates are always up to date, for CheckMousePosition
-    RefreshCoords();
-    window.addEventListener('scroll', RefreshCoords);
-    setInterval(CheckMousePosition, 200);
+    //CheckMousePosition every so often
+    setInterval(CheckMousePosition, 250);
 }
+
 function DoElement() {
     if (showAll) return;
 
@@ -211,35 +211,15 @@ function DoLoadEventListener(el, toggle) {
 }
 
 function DoHover(el, toggle, evt) {
+    var coords = el.getBoundingClientRect();
     if (toggle && !el.wzmHasHover) {
-        if (mouseOverEl)
+        if (mouseOverEl && mouseOverEl != el)
             DoHover(mouseOverEl, false);
         mouseOverEl = el;
-        if (el.wzmHasWizmageBG) {
-            el.className += ' wzmPatternBgImgLight';
-            //eye
-            if (!noEye) {
-                eye.style.top = (el.wzmCoords.top + el.wzmCoords.height / 2 - 8 + window.scrollY) + 'px';
-                eye.style.left = (el.wzmCoords.left + el.wzmCoords.width / 2 - 8 + window.scrollX) + 'px';
-                eye.style.display = 'block';
-                function setupEye() {
-                    eye.style.backgroundImage = eyeCSSUrl;
-                    eye.onclick = function () {
-                        ShowEl.call(el);
-                        eye.style.backgroundImage = undoCSSUrl;
-                        eye.onclick = function () {
-                            DoElement.call(el);
-                            setupEye();
-                        }
-                    }
-                }
-                setupEye();
-            }
-        }
+        DoHoverVisual(el, true, coords);
         el.wzmHasHover = true;
-    } else if (!toggle && el.wzmHasHover && (!evt || !IsMouseIn(evt, el.wzmCoords))) {
-        RemoveClass(el, 'wzmPatternBgImgLight');
-        eye.style.display = 'none';
+    } else if (!toggle && el.wzmHasHover && (!evt || !IsMouseIn(evt, coords))) {
+        DoHoverVisual(el, false, coords);
         el.wzmHasHover = false;
         el.wzgManualHover = false;
         if (el == mouseOverEl)
@@ -247,35 +227,82 @@ function DoHover(el, toggle, evt) {
     }
 }
 
-function RefreshCoords() {
-    if (!contentLoaded || showAll) return;
-    for (var i = 0, max = elList.length; i < max; i++)
-        elList[i].wzmCoords = elList[i].getBoundingClientRect();
-    CheckMousePosition();
-    if (refreshCoordsInt < 1000 * 30)
-        refreshCoordsInt += 200;
-    setTimeout(RefreshCoords, refreshCoordsInt); //at the beginning the page changes quite a bit
-}
-function CheckMousePosition() {
-    if (!mouseMoved || !contentLoaded || showAll) return;
-    mouseMoved = false;
-    if (mouseOverEl) {
-        if (!IsMouseIn(mouseEvent, mouseOverEl.wzmCoords))
-            DoHover(mouseOverEl, false);
-        else if (!mouseOverEl.wzgManualHover && mouseOverEl.wzmHasWizmageBG) //if !mouseOverEl.wzmHasWizmageBG, then we hope to find better
-            return;
+function DoHoverVisual(el, toggle, coords) {
+    if (toggle && !el.wzmHasHoverVisual && el.wzmHasWizmageBG) {
+        if (!noEye) {
+            //eye
+            eye.style.top = (coords.top + coords.height / 2 - 8 + window.scrollY) + 'px';
+            eye.style.left = (coords.left + coords.width / 2 - 8 + window.scrollX) + 'px';
+            eye.style.display = 'block';
+            function setupEye() {
+                eye.style.backgroundImage = eyeCSSUrl;
+                eye.onclick = function () {
+                    ShowEl.call(el);
+                    eye.style.backgroundImage = undoCSSUrl;
+                    DoClearHoverVisualTimer(el, true);
+                    eye.onclick = function () {
+                        DoElement.call(el);
+                        setupEye();
+                        DoClearHoverVisualTimer(el, true);
+                    }
+                }
+            }
+            setupEye();
+        } else
+            el.className += ' wzmPatternBgImgLight';
+        DoClearHoverVisualTimer(el, true);
+        el.wzmHasHoverVisual = true;
+    } else if (!toggle && el.wzmHasHoverVisual) {
+        if (!noEye)
+            eye.style.display = 'none';
+        else
+            RemoveClass(el, 'wzmPatternBgImgLight');
+        DoClearHoverVisualTimer(el, false);
+        el.wzmHasHoverVisual = false;
     }
-    var found = false;
+}
+function DoClearHoverVisualTimer(el, toggle) {
+    if (toggle) {
+        DoClearHoverVisualTimer(el, false);
+        el.wzmClearHoverVisualTimer = setTimeout(function () { DoHoverVisual(el, false); }, 2500);
+    }
+    else if (!toggle && el.wzmClearHoverVisualTimer) {
+        clearTimeout(el.wzmClearHoverVisualTimer);
+        el.wzmClearHoverVisualTimer = null;
+    }
+}
+
+function CheckMousePosition() {
+    if (!mouseMoved || !mouseEvent || !contentLoaded || showAll) return;
+    mouseMoved = false;
+    //see if needs to defocus current
+    if (mouseOverEl) {
+        var coords = mouseOverEl.getBoundingClientRect();
+        if (!IsMouseIn(mouseEvent, coords))
+            DoHover(mouseOverEl, false);
+        else {
+            DoClearHoverVisualTimer(mouseOverEl, true);
+            if (!mouseOverEl.wzmHasHoverVisual)
+                DoHoverVisual(mouseOverEl, true, coords);
+            if (mouseOverEl.wzmHasWizmageBG)
+                return;
+        }
+    }
+    //find element under mouse
+    var found = null;
     for (var i = 0, max = elList.length; i < max; i++) {
         var el = elList[i];
-        if (!el.wzmCoords) continue;
-        if (IsMouseIn(mouseEvent, el.wzmCoords) && (!found || el.wzmHasWizmageBG)) {
-            DoHover(el, true);
-            el.wzgManualHover = true;
-            found = true;
-            if (el.wzmHasWizmageBG)
-                break; //otherwise we hope to find one with wzmHasWizmageBG
+        if (IsMouseIn(mouseEvent, el.getBoundingClientRect())) {
+            if (el.wzmHasWizmageBG) {
+                found = el;
+                break;
+            } else if (!found)
+                found = el;
         }
+    }
+    if (found.wzmHasWizmageBG || !mouseOverEl) {
+        DoHover(el, true);
+        el.wzgManualHover = true;
     }
 }
 function IsMouseIn(mouseEvt, coords) {
