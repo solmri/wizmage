@@ -13,7 +13,7 @@
         .item:first-child { margin-top: 0; }
         .item { margin-top: 10px; }
         #addName { width: 400px; border: 1px solid green; border-radius: 5px; padding: 0px 5px; }
-        #noPatternInfo { background: black; color: white; border-radius: 10px; padding: 0 4px; cursor: default; }
+        #noPatternInfo, #noEyeInfo { background: black; color: white; border-radius: 10px; padding: 0 4px; cursor: default; }
     </style>
 </head>
 <body>
@@ -22,6 +22,11 @@
             <input type="checkbox" id="noPattern" />
             <label for="noPattern">Don't show pattern for hidden images</label>
             <span id="noPatternInfo" title="Note that the pattern was carefully designed to be partly transparent, so you can see what is behind it, yet opaque enough to be able to read white text on it, which without the pattern will be completely invisible. The pattern is also useful as you can see where image-buttons are (often though, Wizmage will detect that these are buttons (or icons) and show them automatically), and  if you're buying a product, you can locate the image of the product to reveal with ALT-a.">?</span>
+        </div>
+        <div>
+            <input type="checkbox" id="noEye" />
+            <label for="noEye">Don't show the Eye in hidden images</label>
+            <span id="noEyeInfo" title="By default, an eye is shown when hovering the mouse over a hidden image. Clicking on it will show that image.">?</span>
         </div>
         <h3>Exceptions</h3>
         <form>

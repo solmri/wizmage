@@ -4,26 +4,36 @@ var contentLoaded = false,
     headStyles = {},
     mouseOverEl = null,
     blankImg = 'data:image/gif;base64,R0lGODlhAQABAIAAAP///////yH5BAEKAAEALAAAAAABAAEAAAICTAEAOw==',
-    pattern = 'url(' + chrome.extension.getURL("pattern.png") + ')',
+    patternCSSUrl = 'url(' + chrome.extension.getURL("pattern.png") + ')',
     patternLightUrl = chrome.extension.getURL("pattern-light.png"),
-    patternLight = 'url(' + patternLightUrl + ')',
-    tagList = ['DIV', 'SPAN', 'A', 'LI', 'TD', 'H1', 'H2', 'H3', 'H4', 'H5', 'H6', 'I', 'STRONG', 'B', 'BIG', 'BUTTON', 'CENTER', 'SECTION', 'TABLE'],
-    observer = null;
+    patternLightCSSUrl = 'url(' + patternLightUrl + ')',
+    eyeCSSUrl = 'url(' + chrome.extension.getURL("eye.png") + ')',
+    undoCSSUrl = 'url(' + chrome.extension.getURL("undo.png") + ')',
+    tagList = ['IMG', 'DIV', 'SPAN', 'A', 'LI', 'TD', 'H1', 'H2', 'H3', 'H4', 'H5', 'H6', 'I', 'STRONG', 'B', 'BIG', 'BUTTON', 'CENTER', 'SECTION', 'TABLE'],
+    observer = null,
+    eye = null,
+    elList = [],
+    mouseMoved = false,
+    mouseEvent = null,
+    noEye,
+    refreshCoordsInt = 1000;
 //main event listeners - must initialise immediately to catch all events
 window.addEventListener('DOMContentLoaded', DoElements);
 var pollID = setInterval(function () {
     if (showAll) clearInterval(pollID);
     else if (document.head) {
         if (!contentLoaded) AddHeadStyle('body', '{opacity: 0 !important;}');
-        AddHeadStyle('img', '{opacity: 0 !important;}');
+        AddHeadStyle('.wzmHide', '{opacity: 0 !important;}');
         chrome.runtime.sendMessage({ r: 'isNoPattern' }, function (isNoPattern) {
-            AddHeadStyle('.patternBgImg', '{background-image: ' + (isNoPattern ? 'none' : pattern) + ' !important; background-repeat: repeat !important;text-indent:0 !important;}');
-            AddHeadStyle('.patternBgImg.patternBgImgLight', '{background-image: ' + (isNoPattern ? 'none' : patternLight) + ' !important;}');
+            AddHeadStyle('.wzmPatternBgImg', '{background-image: ' + (isNoPattern ? 'none' : patternCSSUrl) + ' !important; background-repeat: repeat !important;text-indent:0 !important;}');
+            AddHeadStyle('.wzmPatternBgImg.wzmPatternBgImgLight', '{background-image: ' + (isNoPattern ? 'none' : patternLightCSSUrl) + ' !important;}');
         });
-        AddHeadStyle('.showThisImg', '{opacity:1 !important}');
         clearInterval(pollID);
     }
 }, 1);
+chrome.runtime.sendMessage({ r: 'isNoEye' }, function (isNoEye) {
+    noEye = isNoEye;
+});
 //check if paused or excepted - if yes, show all, if no, hide body. 
 chrome.runtime.sendMessage({ r: 'isExceptionOrPaused', location: window.location }, function (response) {
     if (response) ShowImages();
@@ -36,42 +46,36 @@ chrome.runtime.onMessage.addListener(
     });
 //ALT-a, ALT-z
 document.addEventListener('keydown', DocKeyDown);
+//notice when mouse has moved
+document.addEventListener('mousemove', DocMouseMove);
+window.addEventListener('scroll', WindowScroll);
 //FUNCTIONS
 function DocKeyDown(e) {
     if (mouseOverEl && e.altKey) {
-        if (e.keyCode == 65 && !mouseOverEl.elShown) {
+        if (e.keyCode == 65 && mouseOverEl.wzmHasWizmageBG) {
             ShowEl.call(mouseOverEl);
-        } else if (e.keyCode == 90 && mouseOverEl.elShown) {
-            if (mouseOverEl.tagName == 'IMG') {
-                mouseOverEl.elShown = false;
-                DoImage.call(mouseOverEl);
-            }
-            else
-                DoElement.call(mouseOverEl);
+            eye.style.display = 'none';
+        } else if (e.keyCode == 90 && !mouseOverEl.wzmHasWizmageBG) {
+            DoElement.call(mouseOverEl);
+            eye.style.display = 'none';
         }
     }
 }
+function DocMouseMove(e) { mouseEvent = e; mouseMoved = true; };
+function WindowScroll() { mouseMoved = true; }
 //keep track of which image-element mouse if over
 function mouseEntered(e) {
-    mouseOverEl = this;
-    this.className += ' patternBgImgLight';
+    DoHover(this, true, e);
     e.stopPropagation();
 }
-function mouseLeft() {
-    if (mouseOverEl == this) {
-        mouseOverEl = null;
-        RemoveClass(this, 'patternBgImgLight');
-    }
+function mouseLeft(e) {
+    DoHover(this, false, e);
 }
 //process all elements with background-image, and observe mutations for new ones
 function DoElements() {
     var all = document.querySelectorAll(tagList.join());
     for (var i = 0, max = all.length; i < max; i++)
         DoElement.call(all[i]);
-    var imgs = document.getElementsByTagName('img');
-    for (var i = 0, max = imgs.length; i < max; i++)
-        DoImage.call(imgs[i]);
-    ContentLoaded();
     observer = new WebKitMutationObserver(function (mutations, observer) {
         for (var i = 0; i < mutations.length; i++) {
             var m = mutations[i];
@@ -80,108 +84,224 @@ function DoElements() {
                     var el = m.addedNodes[j];
                     if (tagList.indexOf(el.tagName) >= 0)
                         DoElement.call(el);
-                    if (el.tagName == 'IMG')
-                        DoImage.call(el);
                 }
         }
     });
     observer.observe(document, { subtree: true, childList: true });
+    //create eye
+    eye = document.createElement('div');
+    eye.style.display = 'none';
+    eye.style.width = eye.style.height = '16px';
+    eye.style.position = 'absolute';
+    eye.style.zIndex = 1e8;
+    eye.style.cursor = 'pointer';
+    document.body.appendChild(eye);
     //create temporary div, to eager load background img light to avoid flicker
     var div = document.createElement('div');
     div.style.opacity = div.style.width = div.style.height = 0;
-    div.className = 'patternBgImg patternBgImgLight';
+    div.className = 'wzmPatternBgImg wzmPatternBgImgLight';
     document.body.appendChild(div);
+    //show body
+    ContentLoaded();
+    //ensure coordinates are always up to date, for CheckMousePosition
+    RefreshCoords();
+    window.addEventListener('scroll', RefreshCoords);
+    setInterval(CheckMousePosition, 200);
 }
 function DoElement() {
-    var bgimg = getComputedStyle(this).getPropertyValue('background-image');
-    if (bgimg != 'none' && this.clientWidth >= 32 && this.clientHeight >= 32 && bgimg.slice(0, 3) == 'url') {
-        this.className += ' patternBgImg';
-        this.style.webkitFilter = 'hue-rotate(' + (Math.random() * 360) + 'deg)';
-        if (!this.hasMouseEventListeners) {
-            this.addEventListener('mouseover', mouseEntered);
-            this.addEventListener('mouseout', mouseLeft);
-            this.hasMouseEventListeners = true;
+    if (showAll) return;
+
+    if (this.tagName != 'IMG') {
+        var bgimg = getComputedStyle(this).getPropertyValue('background-image');
+        if (bgimg != 'none' && this.clientWidth >= 32 && this.clientHeight >= 32 && bgimg.slice(0, 3) == 'url') {
+            AddToList(this);
+            DoWizmageBG(this, true);
+            DoMouseEventListeners(this, true);
+            var i = new Image();
+            i.owner = this;
+            i.onload = CheckBgImg;
+            i.src = bgimg.replace(/^url\((.*)\)$/, '$1');
         }
-        var i = new Image();
-        i.owner = this;
-        i.onload = CheckBgImg;
-        i.src = bgimg.replace(/^url\((.*)\)$/, '$1');
-        this.elShown = false;
+    } else {
+        AddToList(this);
+        //attach load event - needed 1) as we need to catch it after it is switched for the blankImg, 2) in case the img gets changed to something else later
+        DoLoadEventListener(this, true);
+
+        //see if not yet loaded
+        if (!this.complete) {
+            //hide, to avoid flash until load event is handled
+            DoHidden(this, true);
+            return;
+        }
+
+        var elWidth = this.width, elHeight = this.height;
+        if (this.src == blankImg) { //was successfully replaced
+            DoHidden(this, false);
+            DoWizmageBG(this, true);
+        } else if (elWidth >= 32 && elHeight >= 32) { //needs to be hidden
+            DoMouseEventListeners(this, true);
+            if (!this.hasTitleAndSizeSetup) {
+                this.style.width = elWidth + 'px';
+                this.style.height = elHeight + 'px';
+                if (!this.title)
+                    if (this.alt)
+                        this.title = this.alt;
+                    else {
+                        this.src.match(/([-\w]+)(\.[\w]+)?$/i);
+                        this.title = RegExp.$1;
+                    }
+                this.hasTitleAndSizeSetup = true;
+            }
+            DoHidden(this, true);
+            this.oldsrc = this.src;
+            this.src = blankImg;
+        } else { //small image
+            DoHidden(this, false);
+        }
     }
 }
 function CheckBgImg() {
     if (this.height < 32 || this.width < 32) ShowEl.call(this.owner);
     this.onload = null;
 };
-function DoImage() {
-    if (showAll || this.elShown) return;
 
-    //attach load event - needed 1) as we need to catch it after it is switched for the blankImg, 2) in case the img gets changed to something else later
-    if (!this.hashasLoadEventListener) {
-        this.addEventListener('load', DoImage);
-        this.hasLoadEventListener = true;
+function AddToList(el) {
+    if (elList.indexOf(el) == -1)
+        elList.push(el);
+}
+function DoWizmageBG(el, toggle) {
+    if (toggle && !el.wzmHasWizmageBG) {
+        el.className += ' wzmPatternBgImg';
+        el.style.webkitFilter = 'hue-rotate(' + (Math.random() * 360) + 'deg)';
+        el.wzmHasWizmageBG = true;
+    } else if (!toggle && el.wzmHasWizmageBG) {
+        RemoveClass(el, 'wzmPatternBgImg');
+        el.style.webkitFilter = '';
+        el.wzmHasWizmageBG = false;
     }
-
-    //see if not yet loaded
-    if (!this.complete) {
-        return;
+}
+function DoHidden(el, toggle) {
+    if (toggle && !el.wzmIsHidden) {
+        el.className += ' wzmHide';
+        el.wzmIsHidden = true;
+    } else if (!toggle && el.wzmIsHidden) {
+        RemoveClass(el, 'wzmHide');
+        el.wzmIsHidden = false;
     }
-
-    var elWidth = this.width, elHeight = this.height;
-    if (this.src == blankImg) {
-        this.className += ' showThisImg';
-        this.style.webkitFilter = 'hue-rotate(' + (Math.random() * 360) + 'deg)';
-        return;
+}
+function DoMouseEventListeners(el, toggle) {
+    if (toggle && !el.wzmHasMouseEventListeners) {
+        el.addEventListener('mouseover', mouseEntered);
+        el.addEventListener('mouseout', mouseLeft);
+        el.wzmHasMouseEventListeners = true;
+    } else if (!toggle && el.wzmHasMouseEventListeners) {
+        el.removeEventListener('mouseover', mouseEntered);
+        el.removeEventListener('mouseout', mouseLeft);
+        el.wzmHasMouseEventListeners = false;
     }
-    RemoveClass(this, 'showThisImg');
-    if (elWidth < 32 || elHeight < 32)
-        this.className += ' showThisImg';
-    else {
-        if (!this.hasMouseEventListeners) {
-            this.addEventListener('mouseover', mouseEntered);
-            this.addEventListener('mouseout', mouseLeft);
-            this.hasMouseEventListeners = true;
-        }
-        if (!this.hasTitleAndSizeSetup) {
-            this.style.width = elWidth + 'px'; this.style.height = elHeight + 'px';
-            if (!this.title)
-                if (this.alt)
-                    this.title = this.alt;
-                else {
-                    this.src.match(/([-\w]+)(\.[\w]+)?$/i);
-                    this.title = RegExp.$1;
-                }
-            this.hasTitleAndSizeSetup = true;
-        }
-        if (!HasClass(this, 'patternBgImg')) this.className += ' patternBgImg';
-        this.oldsrc = this.src;
-        this.src = blankImg;
+}
+function DoLoadEventListener(el, toggle) {
+    if (toggle && !el.wzmHasLoadEventListener) {
+        el.addEventListener('load', DoElement);
+        el.wzmHasLoadEventListener = true;
+    } else if (!toggle && el.wzmHasLoadEventListener) {
+        el.removeEventListener('load', DoElement);
+        el.wzmHasLoadEventListener = false;
     }
 }
 
-function ShowEl() {
-    if (this.elShown) return;
-    this.elShown = true;
-    if (this.tagName == 'IMG') {
-        this.removeEventListener('load', DoImage);
-        this.hasLoadEventListener = false;
-        this.src = this.oldsrc;
+function DoHover(el, toggle, evt) {
+    if (toggle && !el.wzmHasHover) {
+        if (mouseOverEl)
+            DoHover(mouseOverEl, false);
+        mouseOverEl = el;
+        if (el.wzmHasWizmageBG) {
+            el.className += ' wzmPatternBgImgLight';
+            //eye
+            if (!noEye) {
+                eye.style.top = (el.wzmCoords.top + el.wzmCoords.height / 2 - 8 + window.scrollY) + 'px';
+                eye.style.left = (el.wzmCoords.left + el.wzmCoords.width / 2 - 8 + window.scrollX) + 'px';
+                eye.style.display = 'block';
+                function setupEye() {
+                    eye.style.backgroundImage = eyeCSSUrl;
+                    eye.onclick = function () {
+                        ShowEl.call(el);
+                        eye.style.backgroundImage = undoCSSUrl;
+                        eye.onclick = function () {
+                            DoElement.call(el);
+                            setupEye();
+                        }
+                    }
+                }
+                setupEye();
+            }
+        }
+        el.wzmHasHover = true;
+    } else if (!toggle && el.wzmHasHover && (!evt || !IsMouseIn(evt, el.wzmCoords))) {
+        RemoveClass(el, 'wzmPatternBgImgLight');
+        eye.style.display = 'none';
+        el.wzmHasHover = false;
+        el.wzgManualHover = false;
+        if (el == mouseOverEl)
+            mouseOverEl = null;
     }
-    RemoveClass(this, 'patternBgImg');
-    this.style.webkitFilter = '';
+}
+
+function RefreshCoords() {
+    if (!contentLoaded || showAll) return;
+    for (var i = 0, max = elList.length; i < max; i++)
+        elList[i].wzmCoords = elList[i].getBoundingClientRect();
+    CheckMousePosition();
+    if (refreshCoordsInt < 1000 * 30)
+        refreshCoordsInt += 200;
+    setTimeout(RefreshCoords, refreshCoordsInt); //at the beginning the page changes quite a bit
+}
+function CheckMousePosition() {
+    if (!mouseMoved || !contentLoaded || showAll) return;
+    mouseMoved = false;
+    if (mouseOverEl) {
+        if (!IsMouseIn(mouseEvent, mouseOverEl.wzmCoords))
+            DoHover(mouseOverEl, false);
+        else if (!mouseOverEl.wzgManualHover && mouseOverEl.wzmHasWizmageBG) //if !mouseOverEl.wzmHasWizmageBG, then we hope to find better
+            return;
+    }
+    var found = false;
+    for (var i = 0, max = elList.length; i < max; i++) {
+        var el = elList[i];
+        if (!el.wzmCoords) continue;
+        if (IsMouseIn(mouseEvent, el.wzmCoords) && (!found || el.wzmHasWizmageBG)) {
+            DoHover(el, true);
+            el.wzgManualHover = true;
+            found = true;
+            if (el.wzmHasWizmageBG)
+                break; //otherwise we hope to find one with wzmHasWizmageBG
+        }
+    }
+}
+function IsMouseIn(mouseEvt, coords) {
+    return mouseEvt.x >= coords.left && mouseEvt.x < coords.right && mouseEvt.y >= coords.top && mouseEvt.y < coords.bottom;
+}
+
+function ShowEl() {
+    DoHidden(this, false);
+    if (this.tagName == 'IMG') {
+        DoLoadEventListener(this, false);
+        if (this.oldsrc && this.src != this.oldsrc)
+            this.src = this.oldsrc;
+    }
+    DoWizmageBG(this, false);
     if (showAll) {
-        this.removeEventListener('mouseover', mouseEntered);
-        this.removeEventListener('mouseout', mouseLeft);
-        this.hasMouseEventListeners = false;
+        DoMouseEventListeners(this, false);
     }
 }
 function ShowImages() {
     if (showAll) return;
     showAll = true;
     document.removeEventListener('keydown', DocKeyDown);
-    var all = document.querySelectorAll(".patternBgImg");
-    for (var i = 0, max = all.length; i < max; i++)
-        ShowEl.call(all[i]);
+    document.removeEventListener('mousemove', DocMouseMove);
+    window.removeEventListener('scroll', WindowScroll);
+    for (var i = 0, max = elList.length; i < max; i++)
+        ShowEl.call(elList[i]);
     if (!contentLoaded) {
         window.removeEventListener('DOMContentLoaded', DoElements);
         window.addEventListener('DOMContentLoaded', ContentLoaded);
@@ -206,9 +326,6 @@ function RemoveHeadStyle(n) {
 }
 function RemoveClass(el, n) { //these assume long unique class names, so no need to check for word boundaries
     el.className = el.className.replace(new RegExp('\\b' + n + '\\b'), '');
-}
-function HasClass(el, n) {
-    new RegExp('\\b' + n + '\\b').test(el.className);
 }
 function ContentLoaded() {
     contentLoaded = true;
