@@ -1,5 +1,5 @@
 $(function () {
-    var $addName = $('#addName').focus(), $noPattern = $('#noPattern'), $list = $('#list');
+    var $addName = $('#addName').focus(), $noPattern = $('#noPattern'), $noEye = $('#noEye'), $list = $('#list');
     chrome.runtime.sendMessage({ r: 'getUrlList' }, function (urlList) {
         for (var i = 0; i < urlList.length; i++) {
             AddItem(urlList[i]);
@@ -10,6 +10,12 @@ $(function () {
     });
     $noPattern.click(function () {
         chrome.runtime.sendMessage({ r: 'setNoPattern', isNoPattern: $noPattern[0].checked });
+    });
+    chrome.runtime.sendMessage({ r: 'isNoEye' }, function (isNoEye) {
+        $noEye[0].checked = isNoEye;
+    });
+    $noEye.click(function () {
+        chrome.runtime.sendMessage({ r: 'setNoEye', isNoEye: $noEye[0].checked });
     });
     $('form').submit(function () {
         var url = $.trim($addName.val()).toLowerCase();

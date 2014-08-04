@@ -1,5 +1,5 @@
 var ul = localStorage.urlList, urlList = ul ? JSON.parse(ul) : [], excDomains = [],
-    paused = localStorage.isPaused == 1, isNoPattern = localStorage.isNoPattern == 1,
+    paused = localStorage.isPaused == 1, isNoPattern = localStorage.isNoPattern == 1, isNoEye = localStorage.isNoEye == 1,
     pausedTabs = [];
 chrome.runtime.onMessage.addListener(
     function (request, sender, sendResponse) {
@@ -52,6 +52,11 @@ chrome.runtime.onMessage.addListener(
             localStorage.isNoPattern = isNoPattern ? 1 : 0;
         } else if (request.r == 'isNoPattern')
             sendResponse(isNoPattern);
+        else if (request.r == 'setNoEye') {
+            isNoEye = request.isNoEye;
+            localStorage.isNoEye = isNoEye ? 1 : 0;
+        } else if (request.r == 'isNoEye')
+            sendResponse(isNoEye);
         else if (request.r == 'pauseTab') {
             if (request.pause)
                 pausedTabs.push(request.tab.id);
