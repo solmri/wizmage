@@ -18,6 +18,14 @@
 </head>
 <body>
     <div id='cont'>
+        <h3>Exceptions</h3>
+        <form>
+            <input type='text' id='addName'>
+            <input type='submit' value='Add Exception' id='addBut'>
+        </form>
+        <div><i>a URL containing any of the following lines will be excepted</i></div>
+        <div id='list'></div>
+        <h3>Settings</h3>
         <div>
             <input type="checkbox" id="noPattern" />
             <label for="noPattern">Don't show pattern for hidden images</label>
@@ -28,13 +36,6 @@
             <label for="noEye">Don't show the Eye in hidden images</label>
             <span id="noEyeInfo" title="By default, an eye is shown when hovering the mouse over a hidden image. Clicking on it will show that image.">?</span>
         </div>
-        <h3>Exceptions</h3>
-        <form>
-            <input type='text' id='addName'>
-            <input type='submit' value='Add Exception' id='addBut'>
-        </form>
-        <div><i>a URL containing any of the following lines will be excepted</i></div>
-        <div id='list'></div>
     </div>
 </body>
 </html>
