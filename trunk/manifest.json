@@ -1,7 +1,7 @@
 {
     "name":"Wizmage Image Blocker",
     "short_name":"Wizmage",
-    "version":"2.1.0",
+    "version":"2.1.1",
     "manifest_version": 2,
     "description": "An image blocker that will hide images in a way that minimizes the impact on the user's browsing experience.",
     "icons":{"16":"icon16.png","48": "icon48.png","128": "icon128.png" },

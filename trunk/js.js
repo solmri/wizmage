@@ -94,6 +94,8 @@ function wzmMain(extensionUrl, settings, contentLoaded) {
         eye.style.position = 'fixed';
         eye.style.zIndex = 1e8;
         eye.style.cursor = 'pointer';
+        eye.style.padding = '0';
+        eye.style.margin = '0';
         document.body.appendChild(eye);
         //create temporary div, to eager load background img light for noEye to avoid flicker
         if (settings.isNoEye) {
@@ -246,7 +248,7 @@ function wzmMain(extensionUrl, settings, contentLoaded) {
         if (toggle && !el.wzmHasHoverVisual && el.wzmHasWizmageBG) {
             if (!settings.isNoEye) {
                 //eye
-                CenterEye(el, coords);
+                PositionEye(el, coords);
                 eye.style.display = 'block';
                 function setupEye() {
                     eye.style.backgroundImage = eyeCSSUrl;
@@ -285,9 +287,9 @@ function wzmMain(extensionUrl, settings, contentLoaded) {
             el.wzmClearHoverVisualTimer = null;
         }
     }
-    function CenterEye(el, coords) {
-        eye.style.top = (coords.top + coords.height / 2 - 8) + 'px';
-        eye.style.left = (coords.left + coords.width / 2 - 8) + 'px';
+    function PositionEye(el, coords) {
+        eye.style.top = coords.top + 'px';
+        eye.style.left = (coords.right - 16) + 'px';
     }
 
     function CheckMousePosition() {
@@ -303,7 +305,7 @@ function wzmMain(extensionUrl, settings, contentLoaded) {
                     DoHoverVisual(mouseOverEl, true, coords);
                 else {
                     DoHoverVisualClearTimer(mouseOverEl, true);
-                    CenterEye(mouseOverEl, coords);
+                    PositionEye(mouseOverEl, coords);
                 }
                 return;
             }
