@@ -9,6 +9,9 @@ function getDomain(url) {
     var regex = domainRegex.exec(url);
     return regex ? regex[1].toLowerCase() : null;
 }
+function saveUrlList() {
+    localStorage.urlList = JSON.stringify(urlList);
+}
 chrome.runtime.onMessage.addListener(
     function (request, sender, sendResponse) {
         switch (request.r) {
@@ -46,6 +49,7 @@ chrome.runtime.onMessage.addListener(
                 var url = request.domainOnly ? getDomain(request.url) : request.url.toLowerCase();
                 if (url) {
                     urlList.push(url);
+                    saveUrlList();
                     chrome.runtime.sendMessage({ r: 'urlListModified' });
                 }
                 break;
@@ -58,6 +62,7 @@ chrome.runtime.onMessage.addListener(
                     }
                 } else
                     urlList.splice(request.index, 1);
+                saveUrlList();
                 chrome.runtime.sendMessage({ r: 'urlListModified' });
                 break;
             case 'getUrlList':

@@ -96,6 +96,7 @@ function wzmMain(extensionUrl, settings, contentLoaded) {
         eye.style.cursor = 'pointer';
         eye.style.padding = '0';
         eye.style.margin = '0';
+        eye.style.opacity = '.5';
         document.body.appendChild(eye);
         //create temporary div, to eager load background img light for noEye to avoid flicker
         if (settings.isNoEye) {
@@ -288,7 +289,7 @@ function wzmMain(extensionUrl, settings, contentLoaded) {
         }
     }
     function PositionEye(el, coords) {
-        eye.style.top = coords.top + 'px';
+        eye.style.top = (coords.top < 0 ? 0 : coords.top) + 'px';
         eye.style.left = (coords.right - 16) + 'px';
     }
 
