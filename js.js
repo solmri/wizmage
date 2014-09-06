@@ -9,7 +9,7 @@ function wzmMain(extensionUrl, settings, contentLoaded) {
         patternLightCSSUrl = 'url(' + patternLightUrl + ')',
         eyeCSSUrl = 'url(' + extensionUrl + "eye.png" + ')',
         undoCSSUrl = 'url(' + extensionUrl + "undo.png" + ')',
-        tagList = ['IMG', 'DIV', 'SPAN', 'A', 'UL', 'LI', 'TD', 'H1', 'H2', 'H3', 'H4', 'H5', 'H6', 'I', 'STRONG', 'B', 'BIG', 'BUTTON', 'CENTER', 'SECTION', 'TABLE'],
+        tagList = ['IMG', 'DIV', 'SPAN', 'A', 'UL', 'LI', 'TD', 'H1', 'H2', 'H3', 'H4', 'H5', 'H6', 'I', 'STRONG', 'B', 'BIG', 'BUTTON', 'CENTER', 'SECTION', 'TABLE', 'FIGURE'],
         tagListCSS = tagList.join(),
         observer = null,
         eye = null,
@@ -68,6 +68,10 @@ function wzmMain(extensionUrl, settings, contentLoaded) {
     }
     //process all elements with background-image, and observe mutations for new ones
     function Start() {
+        if (document.body.children.length == 1 && document.body.children[0].tagName == 'IMG') {
+            ShowImages();
+            return;
+        }
         DoElements(document.body, false);
         //show body
         if (!contentLoaded)
@@ -131,15 +135,18 @@ function wzmMain(extensionUrl, settings, contentLoaded) {
     function DoElement() {
         if (showAll) return;
         if (this.tagName != 'IMG') {
-            var bgimg = getComputedStyle(this).getPropertyValue('background-image');
-            if (bgimg != 'none' && (this.clientWidth == 0 || this.clientWidth >= 32) && (this.clientHeight == 0 || this.clientHeight >= 32) && bgimg.slice(0, 3) == 'url') { //we need to catch 0 too, as sometimes elements start off as zero
+            var compStyle = getComputedStyle(this), bgimg = compStyle['background-image'], width = parseInt(compStyle['width']) || this.clientWidth, height = parseInt(compStyle['height']) || this.clientHeight; //as per https://developer.mozilla.org/en/docs/Web/API/window.getComputedStyle, getComputedStyle will return the 'used values' for width and height, which is always in px. We also use clientXXX, since sometimes compStyle returns NaN.
+            if (bgimg != 'none' && (width == 0 || width >= 32) && (height == 0 || height >= 32) && bgimg.slice(0, 3) == 'url') { //we need to catch 0 too, as sometimes elements start off as zero
                 AddToList(this);
                 DoWizmageBG(this, true);
                 DoMouseEventListeners(this, true);
-                var i = new Image();
-                i.owner = this;
-                i.onload = CheckBgImg;
-                i.src = bgimg.replace(/^url\((.*)\)$/, '$1');
+                if (this.wzmLastCheckedSrc != bgimg) {
+                    this.wzmLastCheckedSrc = bgimg;
+                    var i = new Image();
+                    i.owner = this;
+                    i.onload = CheckBgImg;
+                    i.src = bgimg.replace(/^url\((.*)\)$/, '$1');
+                }
             }
         } else {
             AddToList(this);
@@ -253,11 +260,13 @@ function wzmMain(extensionUrl, settings, contentLoaded) {
                 eye.style.display = 'block';
                 function setupEye() {
                     eye.style.backgroundImage = eyeCSSUrl;
-                    eye.onclick = function () {
+                    eye.onclick = function (e) {
+                        e.stopPropagation();
                         ShowEl.call(el);
                         eye.style.backgroundImage = undoCSSUrl;
                         DoHoverVisualClearTimer(el, true);
-                        eye.onclick = function () {
+                        eye.onclick = function (e) {
+                            e.stopPropagation();
                             DoElement.call(el);
                             setupEye();
                             DoHoverVisualClearTimer(el, true);
@@ -339,6 +348,10 @@ function wzmMain(extensionUrl, settings, contentLoaded) {
                 this.src = this.oldsrc;
         }
         DoWizmageBG(this, false);
+        if (this.wzmCheckTimeout) {
+            clearTimeout(this.wzmCheckTimeout);
+            this.wzmCheckTimeout = null;
+        }
         if (showAll) {
             DoMouseEventListeners(this, false);
         }
@@ -354,8 +367,6 @@ function wzmMain(extensionUrl, settings, contentLoaded) {
         if (!contentLoaded) {
             window.removeEventListener('DOMContentLoaded', Start);
             window.addEventListener('DOMContentLoaded', ContentLoaded);
-        } else {
-            observer.disconnect();
         }
         for (var s in headStyles)
             RemoveHeadStyle(s);
@@ -363,6 +374,10 @@ function wzmMain(extensionUrl, settings, contentLoaded) {
             DoHover(mouseOverEl, false);
             mouseOverEl = null;
         }
+        if (eye)
+            document.body.removeChild(eye);
+        if (observer)
+            observer.disconnect();
         if (window == top)
             chrome.runtime.sendMessage({ r: 'setColorIcon', toggle: false });
         for (var i = 0, max = iframes.length; i < max; i++)
