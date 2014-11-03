@@ -9,7 +9,7 @@ function wzmMain(extensionUrl, settings, contentLoaded) {
         patternLightCSSUrl = 'url(' + patternLightUrl + ')',
         eyeCSSUrl = 'url(' + extensionUrl + "eye.png" + ')',
         undoCSSUrl = 'url(' + extensionUrl + "undo.png" + ')',
-        tagList = ['IMG', 'DIV', 'SPAN', 'A', 'UL', 'LI', 'TD', 'H1', 'H2', 'H3', 'H4', 'H5', 'H6', 'I', 'STRONG', 'B', 'BIG', 'BUTTON', 'CENTER', 'SECTION', 'TABLE', 'FIGURE'],
+        tagList = ['IMG', 'DIV', 'SPAN', 'A', 'UL', 'LI', 'TD', 'H1', 'H2', 'H3', 'H4', 'H5', 'H6', 'I', 'STRONG', 'B', 'BIG', 'BUTTON', 'CENTER', 'SECTION', 'TABLE', 'FIGURE', 'ASIDE', 'HEADER'],
         tagListCSS = tagList.join(),
         observer = null,
         eye = null,
