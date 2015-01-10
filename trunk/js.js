@@ -125,11 +125,11 @@ function wzmMain(extensionUrl, settings, contentLoaded) {
             DoElement.call(all[i]);
     }
     function DoIframe(iframe) {
-        if (iframe.src) return;
+        if (iframe.src && iframe.src != "about:blank") return;
         iframes.push(iframe);
         var doc = iframe.contentWindow.document;
         AddHeadScript(doc, extensionUrl + 'js.js', null, function () {
-            AddHeadScript(doc, null, 'wzmMain(' + JSON.stringify(extensionUrl) + ',' + JSON.stringify(settings) + ', true)');
+            AddHeadScript(doc, null, 'wzmMain(' + JSON.stringify(extensionUrl) + ',' + JSON.stringify(settings) + ', !!document.body)');
         });
     }
     function DoElement() {
