@@ -80,7 +80,10 @@ function wzmMain(extensionUrl, settings, contentLoaded) {
         observer = new WebKitMutationObserver(function (mutations, observer) {
             for (var i = 0; i < mutations.length; i++) {
                 var m = mutations[i];
-                if (m.addedNodes != null && m.addedNodes.length > 0)
+                if (m.type == 'attributes' && m.attributeName == 'style' && !m.target.wzmBeenBlocked
+                        && (m.oldValue == null || m.oldValue.indexOf('background-image') == -1) && m.target.style.backgroundImage.slice(0, 3) == 'url')
+                    DoElement.call(m.target);
+                else if (m.addedNodes != null && m.addedNodes.length > 0)
                     for (var j = 0; j < m.addedNodes.length; j++) {
                         var el = m.addedNodes[j];
                         if (tagList.indexOf(el.tagName) >= 0)
@@ -90,7 +93,7 @@ function wzmMain(extensionUrl, settings, contentLoaded) {
                     }
             }
         });
-        observer.observe(document, { subtree: true, childList: true });
+        observer.observe(document, { subtree: true, childList: true, attributes: true });
         //create eye
         eye = document.createElement('div');
         eye.style.display = 'none';
@@ -125,7 +128,7 @@ function wzmMain(extensionUrl, settings, contentLoaded) {
             DoElement.call(all[i]);
     }
     function DoIframe(iframe) {
-        if (iframe.src && iframe.src != "about:blank") return;
+        if (iframe.src && iframe.src != "about:blank" && iframe.src.substr(0, 11) != 'javascript:') return;
         iframes.push(iframe);
         var doc = iframe.contentWindow.document;
         AddHeadScript(doc, extensionUrl + 'js.js', null, function () {
@@ -147,6 +150,7 @@ function wzmMain(extensionUrl, settings, contentLoaded) {
                     i.onload = CheckBgImg;
                     i.src = bgimg.replace(/^url\((.*)\)$/, '$1');
                 }
+                this.wzmBeenBlocked = true;
             }
         } else {
             AddToList(this);
@@ -164,6 +168,7 @@ function wzmMain(extensionUrl, settings, contentLoaded) {
             if (this.src == blankImg) { //was successfully replaced
                 DoHidden(this, false);
                 DoWizmageBG(this, true);
+                this.wzmBeenBlocked = true;
             } else if ((elWidth == 0 || elWidth >= 32) && (elHeight == 0 || elHeight >= 32)) { //needs to be hidden - we need to catch 0 too, as sometimes images start off as zero
                 DoMouseEventListeners(this, true);
                 if (!this.wzmHasTitleAndSizeSetup) {
