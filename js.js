@@ -1,50 +1,85 @@
-function wzmMain(extensionUrl, settings, contentLoaded) {
-    //global variables
-    var showAll = false,
+//global variables
+var showAll = false,
+    extensionUrl = chrome.extension.getURL(''),
+    blankImg = 'data:image/gif;base64,R0lGODlhAQABAIAAAP///////yH5BAEKAAEALAAAAAABAAEAAAICTAEAOw==',
+    patternCSSUrl = 'url(' + extensionUrl + "pattern.png" + ')',
+    patternLightUrl = extensionUrl + "pattern-light.png",
+    patternLightCSSUrl = 'url(' + patternLightUrl + ')',
+    eyeCSSUrl = 'url(' + extensionUrl + "eye.png" + ')',
+    undoCSSUrl = 'url(' + extensionUrl + "undo.png" + ')',
+    tagList = ['IMG', 'DIV', 'SPAN', 'A', 'UL', 'LI', 'TD', 'H1', 'H2', 'H3', 'H4', 'H5', 'H6', 'I', 'STRONG', 'B', 'BIG', 'BUTTON', 'CENTER', 'SECTION', 'TABLE', 'FIGURE', 'ASIDE', 'HEADER'],
+    tagListCSS = tagList.join(),
+    elList = [],
+    iframes = [],
+    contentLoaded = false,
+    settings = null;
+
+//keep track of contentLoaded
+window.addEventListener('DOMContentLoaded', function () { contentLoaded = true; });
+
+//start by seeing if is active or is paused etc.
+chrome.runtime.sendMessage({ r: 'getSettings' }, function (s) {
+    settings = s;
+    //if is active - go
+    if (settings && !settings.isExcluded && !settings.isExcludedForTab && !settings.isPaused && !settings.isPausedForTab) {
+        //change icon
+        chrome.runtime.sendMessage({ r: 'setColorIcon', toggle: true });
+        //do main window
+        DoWin(window, contentLoaded);
+    }
+});
+
+//catch 'Show Images' option from browser actions
+chrome.runtime.onMessage.addListener(
+    function (request, sender, sendResponse) {
+        if (request.r == 'showImages') ShowImages();
+    }
+);
+
+function ShowImages() {
+    if (showAll) return;
+    showAll = true;
+    if (window == top)
+        chrome.runtime.sendMessage({ r: 'setColorIcon', toggle: false });
+    window.wzmShowImages();
+    for (var i = 0, max = iframes.length; i < max; i++)
+        if (iframes[i].contentWindow && iframes[i].contentWindow.wzmShowImages)
+            iframes[i].contentWindow.wzmShowImages();
+}
+
+function DoWin(win, winContentLoaded) {
+    var doc = win.document,
         headStyles = {},
-        mouseOverEl = null,
-        blankImg = 'data:image/gif;base64,R0lGODlhAQABAIAAAP///////yH5BAEKAAEALAAAAAABAAEAAAICTAEAOw==',
-        patternCSSUrl = 'url(' + extensionUrl + "pattern.png" + ')',
-        patternLightUrl = extensionUrl + "pattern-light.png",
-        patternLightCSSUrl = 'url(' + patternLightUrl + ')',
-        eyeCSSUrl = 'url(' + extensionUrl + "eye.png" + ')',
-        undoCSSUrl = 'url(' + extensionUrl + "undo.png" + ')',
-        tagList = ['IMG', 'DIV', 'SPAN', 'A', 'UL', 'LI', 'TD', 'H1', 'H2', 'H3', 'H4', 'H5', 'H6', 'I', 'STRONG', 'B', 'BIG', 'BUTTON', 'CENTER', 'SECTION', 'TABLE', 'FIGURE', 'ASIDE', 'HEADER'],
-        tagListCSS = tagList.join(),
         observer = null,
         eye = null,
-        elList = [],
         mouseMoved = false,
         mouseEvent = null,
-        iframes = [];
-    if (contentLoaded)
+        mouseOverEl = null,
+        hasStarted = false;
+    //start, or register start
+    if (winContentLoaded)
         Start();
     else
-        window.addEventListener('DOMContentLoaded', Start);
+        win.addEventListener('DOMContentLoaded', Start);
+    //we need to set some css as soon as possible
     var pollID = setInterval(function () {
         if (showAll) clearInterval(pollID);
-        else if (document.head) {
-            if (!contentLoaded) AddHeadStyle('body', '{opacity: 0 !important;}');
+        else if (doc.head) {
+            if (!hasStarted) AddHeadStyle('body', '{opacity: 0 !important;}');
             AddHeadStyle('.wzmHide', '{opacity: 0 !important;}');
             AddHeadStyle('.wzmPatternBgImg', '{background-image: ' + (settings.isNoPattern ? 'none' : patternCSSUrl) + ' !important; background-repeat: repeat !important;text-indent:0 !important;}');
             AddHeadStyle('.wzmPatternBgImg.wzmPatternBgImgLight', '{background-image: ' + (settings.isNoPattern ? 'none' : patternLightCSSUrl) + ' !important;}');
             clearInterval(pollID);
         }
     }, 1);
-    //catch 'Show Images' option from browser actions
-    if (chrome.runtime) {
-        chrome.runtime.onMessage.addListener(
-            function (request, sender, sendResponse) {
-                if (request.r == 'showImages') ShowImages();
-            }
-        );
-    }
     //ALT-a, ALT-z
-    document.addEventListener('keydown', DocKeyDown);
+    doc.addEventListener('keydown', DocKeyDown);
     //notice when mouse has moved
-    document.addEventListener('mousemove', DocMouseMove);
-    window.addEventListener('scroll', WindowScroll);
-    //FUNCTIONS
+    doc.addEventListener('mousemove', DocMouseMove);
+    win.addEventListener('scroll', WindowScroll);
+
+    function DocMouseMove(e) { mouseEvent = e; mouseMoved = true; };
+    function WindowScroll() { mouseMoved = true; CheckMousePosition(); }
     function DocKeyDown(e) {
         if (mouseOverEl && e.altKey) {
             if (e.keyCode == 65 && mouseOverEl.wzmHasWizmageBG) {
@@ -56,8 +91,6 @@ function wzmMain(extensionUrl, settings, contentLoaded) {
             }
         }
     }
-    function DocMouseMove(e) { mouseEvent = e; mouseMoved = true; };
-    function WindowScroll() { mouseMoved = true; CheckMousePosition(); }
     //keep track of which image-element mouse if over
     function mouseEntered(e) {
         DoHover(this, true, e);
@@ -68,14 +101,14 @@ function wzmMain(extensionUrl, settings, contentLoaded) {
     }
     //process all elements with background-image, and observe mutations for new ones
     function Start() {
-        if (document.body.children.length == 1 && document.body.children[0].tagName == 'IMG') {
+        //when viewing an image (not a webpage)
+        if (doc.body.children.length == 1 && doc.body.children[0].tagName == 'IMG') {
             ShowImages();
             return;
         }
-        DoElements(document.body, false);
+        DoElements(doc.body, false);
         //show body
-        if (!contentLoaded)
-            ContentLoaded();
+        if (headStyles['body']) RemoveHeadStyle('body');
         //mutation observer
         observer = new WebKitMutationObserver(function (mutations, observer) {
             for (var i = 0; i < mutations.length; i++) {
@@ -93,9 +126,9 @@ function wzmMain(extensionUrl, settings, contentLoaded) {
                     }
             }
         });
-        observer.observe(document, { subtree: true, childList: true, attributes: true });
+        observer.observe(doc, { subtree: true, childList: true, attributes: true });
         //create eye
-        eye = document.createElement('div');
+        eye = doc.createElement('div');
         eye.style.display = 'none';
         eye.style.width = eye.style.height = '16px';
         eye.style.position = 'fixed';
@@ -104,21 +137,23 @@ function wzmMain(extensionUrl, settings, contentLoaded) {
         eye.style.padding = '0';
         eye.style.margin = '0';
         eye.style.opacity = '.5';
-        document.body.appendChild(eye);
+        doc.body.appendChild(eye);
         //create temporary div, to eager load background img light for noEye to avoid flicker
         if (settings.isNoEye) {
-            var div = document.createElement('div');
+            var div = doc.createElement('div');
             div.style.opacity = div.style.width = div.style.height = 0;
             div.className = 'wzmPatternBgImg wzmPatternBgImgLight';
-            document.body.appendChild(div);
+            doc.body.appendChild(div);
         }
         //CheckMousePosition every so often
         setInterval(CheckMousePosition, 250);
         //empty iframes
-        var iframes = document.getElementsByTagName('iframe');
+        var iframes = doc.getElementsByTagName('iframe');
         for (var i = 0, max = iframes.length; i < max; i++) {
             DoIframe(iframes[i]);
         }
+        //mark as started
+        hasStarted = true;
     }
     function DoElements(el, includeEl) {
         if (includeEl)
@@ -130,10 +165,15 @@ function wzmMain(extensionUrl, settings, contentLoaded) {
     function DoIframe(iframe) {
         if (iframe.src && iframe.src != "about:blank" && iframe.src.substr(0, 11) != 'javascript:') return;
         iframes.push(iframe);
-        var doc = iframe.contentWindow.document;
-        AddHeadScript(doc, extensionUrl + 'js.js', null, function () {
-            AddHeadScript(doc, null, 'wzmMain(' + JSON.stringify(extensionUrl) + ',' + JSON.stringify(settings) + ', !!document.body)');
-        });
+        var win = iframe.contentWindow;
+        var pollNum = 0, pollID = setInterval(function () {
+            if (doc.body) {
+                clearInterval(pollID);
+                DoWin(win, true);
+            }
+            if (++pollNum == 500)
+                clearInterval(pollID);
+        }, 10);
     }
     function DoElement() {
         if (showAll) return;
@@ -361,64 +401,53 @@ function wzmMain(extensionUrl, settings, contentLoaded) {
             DoMouseEventListeners(this, false);
         }
     }
-    function ShowImages() {
-        if (showAll) return;
-        showAll = true;
-        document.removeEventListener('keydown', DocKeyDown);
-        document.removeEventListener('mousemove', DocMouseMove);
-        window.removeEventListener('scroll', WindowScroll);
+
+    function AddHeadStyle(n, s) {
+        var styleel = doc.createElement('style');
+        styleel.type = 'text/css';
+        styleel.appendChild(doc.createTextNode(n + s));
+        doc.head.appendChild(styleel);
+        headStyles[n] = styleel;
+    }
+    function AddHeadScript(doc, src, code, onload) {
+        var scriptel = doc.createElement('script');
+        scriptel.type = 'text/javascript';
+        if (src)
+            scriptel.src = src;
+        if (code)
+            scriptel.appendChild(doc.createTextNode(code));
+        if (onload)
+            scriptel.onload = onload;
+        doc.head.appendChild(scriptel);
+    }
+    function RemoveHeadStyle(n) {
+        doc.head.removeChild(headStyles[n]);
+        delete headStyles[n];
+    }
+    function RemoveClass(el, n) { //these assume long unique class names, so no need to check for word boundaries
+        el.className = el.className.replace(new RegExp('\\b' + n + '\\b'), '');
+    }
+
+    win.wzmShowImages = function () {
+        doc.removeEventListener('keydown', DocKeyDown);
+        doc.removeEventListener('mousemove', DocMouseMove);
+        win.removeEventListener('scroll', WindowScroll);
         for (var i = 0, max = elList.length; i < max; i++)
             ShowEl.call(elList[i]);
-        if (!contentLoaded) {
-            window.removeEventListener('DOMContentLoaded', Start);
-            window.addEventListener('DOMContentLoaded', ContentLoaded);
-        }
+        win.removeEventListener('DOMContentLoaded', Start);
         for (var s in headStyles)
             RemoveHeadStyle(s);
         if (mouseOverEl) {
             DoHover(mouseOverEl, false);
             mouseOverEl = null;
         }
-        if (eye)
-            document.body.removeChild(eye);
+        if (eye) {
+            for (var i = 0, bodyChildren = doc.body.children; i < bodyChildren.length; i++) //for some reason, sometimes the eye is removed before
+                if (bodyChildren[i] == eye)
+                    doc.body.removeChild(eye);
+        }
         if (observer)
             observer.disconnect();
-        if (window == top)
-            chrome.runtime.sendMessage({ r: 'setColorIcon', toggle: false });
-        for (var i = 0, max = iframes.length; i < max; i++)
-            AddHeadScript(iframes[i].contentWindow.document, null, 'if (wzmShowImages) wzmShowImages()');
     }
-    //if is a dynamic iframe, and therefore this is not a content script, then make ShowImages public
-    if (!chrome.runtime)
-        window.wzmShowImages = ShowImages;
 
-    function AddHeadStyle(n, s) {
-        var styleel = document.createElement('style');
-        styleel.type = 'text/css';
-        styleel.appendChild(document.createTextNode(n + s));
-        document.head.appendChild(styleel);
-        headStyles[n] = styleel;
-    }
-    function AddHeadScript(doc, src, code, onload) {
-        var scriptel = document.createElement('script');
-        scriptel.type = 'text/javascript';
-        if (src)
-            scriptel.src = src;
-        if (code)
-            scriptel.appendChild(document.createTextNode(code));
-        if (onload)
-            scriptel.onload = onload;
-        doc.head.appendChild(scriptel);
-    }
-    function RemoveHeadStyle(n) {
-        document.head.removeChild(headStyles[n]);
-        delete headStyles[n];
-    }
-    function RemoveClass(el, n) { //these assume long unique class names, so no need to check for word boundaries
-        el.className = el.className.replace(new RegExp('\\b' + n + '\\b'), '');
-    }
-    function ContentLoaded() {
-        contentLoaded = true;
-        if (headStyles['body']) RemoveHeadStyle('body');
-    }
 }
