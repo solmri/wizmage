@@ -15,6 +15,7 @@
         #still-seeing-images { font-size: 10px; }
         #advice { display: none; padding-left: 20px; }
             #advice > li { margin-bottom: 5px; }
+        #exclude-tab-wrap { display: none; }
     </style>
 </head>
 <body>
@@ -28,11 +29,14 @@
         </div>
         <div class='item'>
             <input type='checkbox' id='excludeDomain'>
-            <label for='excludeDomain'>Exclude Website</label>
+            <label for='excludeDomain' id="exclude-domain-label"></label>
         </div>
-        <div class='item'>
-            <input type='checkbox' id='excludeForTab'>
-            <label for='excludeForTab'>Exclude Website<br />for this Tab</label>
+        <div id="exclude-tab-wrap">
+            <div class='item'>
+                <input type='checkbox' id='excludeForTab'>
+                <label for='excludeForTab'>Exclude Website<br />
+                    for this Tab</label>
+            </div>
         </div>
         <div class='item'>
             <input type='checkbox' id='pauseChk'>
@@ -40,7 +44,8 @@
         </div>
         <div class='item'>
             <input type='checkbox' id='pauseTab'>
-            <label for='pauseTab'>Pause<br />for this Tab</label>
+            <label for='pauseTab'>Pause<br />
+                for this Tab</label>
         </div>
         <div class="item">
             <div><a id="still-seeing-images">Still seeing images?</a></div>

@@ -2,6 +2,7 @@ var ul = localStorage.urlList, urlList = ul ? JSON.parse(ul) : [],
     paused = localStorage.isPaused == 1,
     isNoPattern = localStorage.isNoPattern == 1,
     isNoEye = localStorage.isNoEye == 1,
+    isBlackList = localStorage.isBlackList == 1,
     excludeForTabList = [],
     pauseForTabList = [],
     domainRegex = /^\w+:\/\/([\w\.:-]+)/;
@@ -19,7 +20,8 @@ chrome.runtime.onMessage.addListener(
                 var settings = {
                     isPaused: paused,
                     isNoPattern: isNoPattern,
-                    isNoEye: isNoEye
+                    isNoEye: isNoEye,
+                    isBlackList: isBlackList
                 };
                 var tab = request.tab || sender.tab;
                 if (tab) {
@@ -38,6 +40,8 @@ chrome.runtime.onMessage.addListener(
                             if (lowerUrl.indexOf(urlList[i]) != -1)
                             { settings.isExcluded = true; break; }
                         }
+                        if (isBlackList)
+                            settings.isExcluded = !settings.isExcluded;
                     }
                 }
                 sendResponse(settings);
@@ -99,6 +103,10 @@ chrome.runtime.onMessage.addListener(
             case 'setNoEye':
                 isNoEye = request.toggle;
                 localStorage.isNoEye = isNoEye ? 1 : 0;
+                break;
+            case 'setBlackList':
+                isBlackList = request.toggle;
+                localStorage.isBlackList = isBlackList ? 1 : 0;
                 break;
         }
     }
