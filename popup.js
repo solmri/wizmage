@@ -4,10 +4,12 @@ chrome.tabs.query({ active: true, currentWindow: true }, function (tabs) {
         chrome.tabs.sendMessage(activeTab.id, { r: 'showImages' });
     }
     chrome.runtime.sendMessage({ r: 'getSettings', tab: activeTab }, function (settings) {
-        if (settings.isPaused) document.getElementById('pauseChk').checked = true;
-        if (settings.isPausedForTab) document.getElementById('pauseTab').checked = true;
-        if (settings.isExcluded) document.getElementById('excludeDomain').checked = true;
-        if (settings.isExcludedForTab) document.getElementById('excludeForTab').checked = true;
+        document.getElementById('pauseChk').checked = settings.isPaused;
+        document.getElementById('pauseTab').checked = settings.isPausedForTab;
+        document.getElementById('excludeDomain').checked = settings.isBlackList ? !settings.isExcluded : settings.isExcluded;
+        document.getElementById('excludeForTab').checked = settings.isExcludedForTab;
+        document.getElementById('exclude-domain-label').innerText = (settings.isBlackList ? 'Add' : 'Exclude') + ' Website';
+        document.getElementById('exclude-tab-wrap').style.display = settings.isBlackList ? 'none' : 'block';
     });
     document.getElementById('showImages').onclick = function () {
         showImages();

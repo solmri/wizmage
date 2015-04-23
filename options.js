@@ -1,8 +1,9 @@
 $(function () {
-    var $addName = $('#addName').focus(), $noPattern = $('#noPattern'), $noEye = $('#noEye'), $list = $('#list');
+    var $addName = $('#addName').focus(), $noPattern = $('#noPattern'), $noEye = $('#noEye'), $list = $('#list'), $whiteList=$('#white-list'), $blackList=$('#black-list');
     chrome.runtime.sendMessage({ r: 'getSettings' }, function (settings) {
         $noPattern[0].checked = settings.isNoPattern;
         $noEye[0].checked = settings.isNoEye;
+        (settings.isBlackList ? $blackList : $whiteList)[0].checked = true;
     });
     function getUrlList() {
         chrome.runtime.sendMessage({ r: 'getUrlList' }, function (urlList) {
@@ -22,6 +23,12 @@ $(function () {
     });
     $noEye.click(function () {
         chrome.runtime.sendMessage({ r: 'setNoEye', toggle: this.checked });
+    });
+    $whiteList.click(function () {
+        chrome.runtime.sendMessage({ r: 'setBlackList', toggle: false });
+    });
+    $blackList.click(function () {
+        chrome.runtime.sendMessage({ r: 'setBlackList', toggle: true });
     });
     $('form').submit(function () {
         var url = $.trim($addName.val()).toLowerCase();
