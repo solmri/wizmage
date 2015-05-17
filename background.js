@@ -1,16 +1,16 @@
-if (!chrome.storage.sync.syncInit) {
-    chrome.storage.sync.urlList = JSON.parse(localStorage.urlList || '[]');
-    chrome.storage.sync.isPaused = localStorage.isPaused;
-    chrome.storage.sync.isNoPattern = localStorage.isNoPattern;
-    chrome.storage.sync.isNoEye = localStorage.isNoEye;
-    chrome.storage.sync.isBlackList = localStorage.isBlackList;
-    chrome.storage.sync.syncInit = true;
+if (chrome.storage.sync.syncInit) {
+    localStorage.urlList = chrome.storage.sync.urlList;
+    localStorage.isPaused = chrome.storage.sync.isPaused;
+    localStorage.isNoPattern = chrome.storage.sync.isNoPattern;
+    localStorage.isNoEye = chrome.storage.sync.isNoEye;
+    localStorage.isBlackList = chrome.storage.sync.isBlackList;
+    chrome.storage.sync.syncInit = false;
 }
-var urlList = chrome.storage.sync.urlList || [],
-    paused = chrome.storage.sync.isPaused == 1,
-    isNoPattern = chrome.storage.sync.isNoPattern == 1,
-    isNoEye = chrome.storage.sync.isNoEye == 1,
-    isBlackList = chrome.storage.sync.isBlackList == 1,
+var ul = localStorage.urlList, urlList = ul ? JSON.parse(ul) : [],
+    paused = localStorage.isPaused == 1,
+    isNoPattern = localStorage.isNoPattern == 1,
+    isNoEye = localStorage.isNoEye == 1,
+    isBlackList = localStorage.isBlackList == 1,
     excludeForTabList = [],
     pauseForTabList = [],
     domainRegex = /^\w+:\/\/([\w\.:-]+)/;
@@ -19,7 +19,7 @@ function getDomain(url) {
     return regex ? regex[1].toLowerCase() : null;
 }
 function saveUrlList() {
-    chrome.storage.sync.urlList = urlList;
+    localStorage.urlList = JSON.stringify(urlList);
 }
 chrome.runtime.onMessage.addListener(
     function (request, sender, sendResponse) {
@@ -94,7 +94,7 @@ chrome.runtime.onMessage.addListener(
                 break;
             case 'pause':
                 paused = request.toggle;
-                chrome.storage.sync.isPaused = paused ? 1 : 0;
+                localStorage.isPaused = paused ? 1 : 0;
                 break;
             case 'pauseForTab':
                 if (request.toggle)
@@ -106,15 +106,15 @@ chrome.runtime.onMessage.addListener(
                 break;
             case 'setNoPattern':
                 isNoPattern = request.toggle;
-                chrome.storage.sync.isNoPattern = isNoPattern ? 1 : 0;
+                localStorage.isNoPattern = isNoPattern ? 1 : 0;
                 break;
             case 'setNoEye':
                 isNoEye = request.toggle;
-                chrome.storage.sync.isNoEye = isNoEye ? 1 : 0;
+                localStorage.isNoEye = isNoEye ? 1 : 0;
                 break;
             case 'setBlackList':
                 isBlackList = request.toggle;
-                chrome.storage.sync.isBlackList = isBlackList ? 1 : 0;
+                localStorage.isBlackList = isBlackList ? 1 : 0;
                 break;
         }
     }
