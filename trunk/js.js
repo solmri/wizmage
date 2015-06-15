@@ -102,7 +102,8 @@ function DoWin(win, winContentLoaded) {
     //process all elements with background-image, and observe mutations for new ones
     function Start() {
         //when viewing an image (not a webpage)
-        if (doc.body.children.length == 1 && doc.body.children[0].tagName == 'IMG') {
+        if (!doc.body) return; //with iFrames it happens
+        if (win == top && doc.body.children.length == 1 && doc.body.children[0].tagName == 'IMG') {
             ShowImages();
             return;
         }
@@ -166,6 +167,7 @@ function DoWin(win, winContentLoaded) {
         if (iframe.src && iframe.src != "about:blank" && iframe.src.substr(0, 11) != 'javascript:') return;
         iframes.push(iframe);
         var win = iframe.contentWindow;
+        if (!win) return; //with iFrames it happens
         var pollNum = 0, pollID = setInterval(function () {
             if (doc.body) {
                 clearInterval(pollID);
