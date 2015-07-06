@@ -226,6 +226,10 @@ function DoWin(win, winContentLoaded) {
                     this.wzmHasTitleAndSizeSetup = true;
                 }
                 DoHidden(this, true);
+                if (this.srcset) {
+                    this.oldsrcset = this.srcset;
+                    this.srcset = '';
+                }
                 this.oldsrc = this.src;
                 this.src = blankImg;
             } else { //small image
@@ -391,8 +395,12 @@ function DoWin(win, winContentLoaded) {
         DoHidden(this, false);
         if (this.tagName == 'IMG') {
             DoLoadEventListener(this, false);
-            if (this.oldsrc && this.src != this.oldsrc)
+            if (this.oldsrc && this.src != this.oldsrc) {
                 this.src = this.oldsrc;
+            }
+            if (this.oldsrcset && this.srcset != this.oldsrcset) {
+                this.srcset = this.oldsrcset;
+            }
         }
         DoWizmageBG(this, false);
         if (this.wzmCheckTimeout) {
