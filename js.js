@@ -7,7 +7,7 @@ var showAll = false,
     patternLightCSSUrl = 'url(' + patternLightUrl + ')',
     eyeCSSUrl = 'url(' + extensionUrl + "eye.png" + ')',
     undoCSSUrl = 'url(' + extensionUrl + "undo.png" + ')',
-    tagList = ['IMG', 'DIV', 'SPAN', 'A', 'UL', 'LI', 'TD', 'H1', 'H2', 'H3', 'H4', 'H5', 'H6', 'I', 'STRONG', 'B', 'BIG', 'BUTTON', 'CENTER', 'SECTION', 'TABLE', 'FIGURE', 'ASIDE', 'HEADER'],
+    tagList = ['IMG', 'DIV', 'SPAN', 'A', 'UL', 'LI', 'TD', 'H1', 'H2', 'H3', 'H4', 'H5', 'H6', 'I', 'STRONG', 'B', 'BIG', 'BUTTON', 'CENTER', 'SECTION', 'TABLE', 'FIGURE', 'ASIDE', 'HEADER', 'VIDEO', 'P', 'ARTICLE'],
     tagListCSS = tagList.join(),
     elList = [],
     iframes = [],
@@ -179,22 +179,7 @@ function DoWin(win, winContentLoaded) {
     }
     function DoElement() {
         if (showAll) return;
-        if (this.tagName != 'IMG') {
-            var compStyle = getComputedStyle(this), bgimg = compStyle['background-image'], width = parseInt(compStyle['width']) || this.clientWidth, height = parseInt(compStyle['height']) || this.clientHeight; //as per https://developer.mozilla.org/en/docs/Web/API/window.getComputedStyle, getComputedStyle will return the 'used values' for width and height, which is always in px. We also use clientXXX, since sometimes compStyle returns NaN.
-            if (bgimg != 'none' && (width == 0 || width >= 32) && (height == 0 || height >= 32) && bgimg.slice(0, 3) == 'url') { //we need to catch 0 too, as sometimes elements start off as zero
-                AddToList(this);
-                DoWizmageBG(this, true);
-                DoMouseEventListeners(this, true);
-                if (this.wzmLastCheckedSrc != bgimg) {
-                    this.wzmLastCheckedSrc = bgimg;
-                    var i = new Image();
-                    i.owner = this;
-                    i.onload = CheckBgImg;
-                    i.src = bgimg.replace(/^url\((.*)\)$/, '$1');
-                }
-                this.wzmBeenBlocked = true;
-            }
-        } else {
+        if (this.tagName == 'IMG') {
             AddToList(this);
             //attach load event - needed 1) as we need to catch it after it is switched for the blankImg, 2) in case the img gets changed to something else later
             DoLoadEventListener(this, true);
@@ -234,6 +219,26 @@ function DoWin(win, winContentLoaded) {
                 this.src = blankImg;
             } else { //small image
                 DoHidden(this, false);
+            }
+        }
+        else if (this.tagName == 'VIDEO') {
+            AddToList(this);
+            DoHidden(this, true);
+            DoWizmageBG(this, true);
+        } else {
+            var compStyle = getComputedStyle(this), bgimg = compStyle['background-image'], width = parseInt(compStyle['width']) || this.clientWidth, height = parseInt(compStyle['height']) || this.clientHeight; //as per https://developer.mozilla.org/en/docs/Web/API/window.getComputedStyle, getComputedStyle will return the 'used values' for width and height, which is always in px. We also use clientXXX, since sometimes compStyle returns NaN.
+            if (bgimg != 'none' && (width == 0 || width >= 32) && (height == 0 || height >= 32) && bgimg.slice(0, 3) == 'url') { //we need to catch 0 too, as sometimes elements start off as zero
+                AddToList(this);
+                DoWizmageBG(this, true);
+                DoMouseEventListeners(this, true);
+                if (this.wzmLastCheckedSrc != bgimg) {
+                    this.wzmLastCheckedSrc = bgimg;
+                    var i = new Image();
+                    i.owner = this;
+                    i.onload = CheckBgImg;
+                    i.src = bgimg.replace(/^url\((.*)\)$/, '$1');
+                }
+                this.wzmBeenBlocked = true;
             }
         }
     }
@@ -350,7 +355,9 @@ function DoWin(win, winContentLoaded) {
     }
     function PositionEye(el, coords) {
         eye.style.top = (coords.top < 0 ? 0 : coords.top) + 'px';
-        eye.style.left = (coords.right - 16) + 'px';
+        var left = coords.right; if (left > doc.documentElement.clientWidth) left = doc.documentElement.clientWidth;
+        eye.style.left = (left - 16) + 'px';
+
     }
 
     function CheckMousePosition() {
