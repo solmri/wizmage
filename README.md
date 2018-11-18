@@ -5,4 +5,4 @@ The project used to be on Google Code but was archived (?).
 
 In the near future, I'd like to add new functionalities to the extension. I'd start by adding an option for darker images in lieu of existing ones. 
 
-Edit: The code is currently being maintained at https://www.assembla.com/spaces/wizmage
+Edit: The code is currently being maintained by the original author at https://www.assembla.com/spaces/wizmage
